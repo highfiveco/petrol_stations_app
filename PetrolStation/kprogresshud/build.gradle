@@ -1,0 +1,74 @@
+buildscript {
+    repositories {
+    }
+
+}
+
+
+apply plugin: 'com.android.library'
+
+project.archivesBaseName = 'kprogresshud'
+
+android {
+    namespace 'com.kaopiz.kprogresshud'
+
+    compileSdk { version = release(36) }
+    defaultConfig {
+        minSdk project.min_sdk_version.toInteger()
+        targetSdk project.compile_sdk_version.toInteger()
+        versionCode 120
+        versionName "1.2.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+}
+
+dependencies {
+    api fileTree(dir: 'libs', include: ['*.jar'])
+    testImplementation 'junit:junit:4.12'
+}
+
+
+
+
+ext {
+    bintrayRepo = 'KProgressHUD'
+    bintrayName = 'KProgressHUD'
+
+    publishedGroupId = 'com.kaopiz'
+    libraryName = 'kprogresshud'
+    artifact = 'kprogresshud'
+
+    libraryDescription = 'A customizable ProgressHUD for Android'
+
+    siteUrl = 'http://kaopiz.github.io/KProgressHUD/'
+    gitUrl = 'https://github.com/Kaopiz/KProgressHUD'
+
+    libraryVersion = '1.2.0'
+
+    developerId = 'kaopiz'
+    developerName = 'Kaopiz Software Co., Ltd.'
+    developerEmail = 'contact@kaopiz.com'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
+group = publishedGroupId
+version = libraryVersion
+
+
+// Bintray
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+
+

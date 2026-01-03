@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/main_layout"
+    android:layoutDirection="rtl">
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/splash_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/splsh_bg"
+        android:scaleType="centerCrop"/>
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/logo"
+        android:layout_width="79dp"
+        android:layout_height="79dp"
+        android:src="@drawable/splsh_logo"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="50dp"
+        android:layout_marginBottom="20dp"/>
+
+    <RelativeLayout
+        android:id="@+id/ic_back"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:layout_alignParentLeft="true"
+        android:padding="16dp">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_back_white"
+            android:layout_centerHorizontal="true"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/logo"
+        android:layout_marginRight="26dp"
+        android:layout_marginLeft="26dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="36dp"
+        android:background="@drawable/rounded_white">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/footer"
+            android:fillViewport="true"
+            android:fitsSystemWindows="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:orientation="vertical">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/username"
+                    android:textSize="16sp"
+                    android:textColor="#1F1F39"
+                    android:fontFamily="@font/din_medium"/>
+
+                <androidx.appcompat.widget.AppCompatEditText
+                    android:id="@+id/username"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:padding="16dp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:background="@drawable/edittext_gray_light_bg"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/password"
+                    android:textSize="16sp"
+                    android:layout_marginTop="16dp"
+                    android:textColor="#1F1F39"
+                    android:fontFamily="@font/din_medium"/>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/edittext_gray_light_bg">
+
+                    <androidx.appcompat.widget.AppCompatEditText
+                        android:id="@+id/password"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:padding="16dp"
+                        android:fontFamily="@font/din_regular"
+                        android:includeFontPadding="false"
+                        android:gravity="right"
+                        android:inputType="textPassword"
+                        android:layout_marginLeft="16dp"
+                        android:layout_toRightOf="@+id/ic_show_password"
+                        android:background="@null"/>
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/ic_show_password"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_alignParentLeft="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginLeft="16dp"
+                        android:src="@drawable/ic_show_password"/>
+
+
+                </RelativeLayout>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/company_code"
+                    android:textSize="16sp"
+                    android:layout_marginTop="16dp"
+                    android:textColor="#1F1F39"
+                    android:fontFamily="@font/din_medium"/>
+
+                <androidx.appcompat.widget.AppCompatEditText
+                    android:id="@+id/company_code"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:padding="16dp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:background="@drawable/edittext_gray_light_bg"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/scan_qr"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/scan_qr"
+                    android:textSize="14sp"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="30dp"
+                    android:textColor="#38385E"
+                    android:fontFamily="@font/din_medium"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/sign_in"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_button"
+                    android:padding="16dp"
+                    android:textColor="@color/white"
+                    android:gravity="center"
+                    android:fontFamily="@font/din_medium"
+                    android:textSize="15sp"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/sign_in"/>
+            </LinearLayout>
+
+        </ScrollView>
+
+        <LinearLayout
+            android:id="@+id/footer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:padding="16dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/design_programming"
+                    android:textColor="#78829D"
+                    android:layout_gravity="center"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:textSize="13sp"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/high_five"
+                    android:textColor="@color/colorAccent"
+                    android:layout_marginRight="5dp"
+                    android:fontFamily="@font/din_regular"
+                    android:layout_gravity="center"
+                    android:includeFontPadding="false"
+                    android:textSize="13sp"/>
+            </LinearLayout>
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/year"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2022"
+                android:textColor="#78829D"
+                android:layout_marginTop="10dp"
+                android:layout_gravity="center"
+                android:fontFamily="@font/din_regular"
+                android:includeFontPadding="false"
+                android:textSize="13sp"/>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</RelativeLayout>

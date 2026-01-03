@@ -2,56 +2,176 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.spotless)
+
+    id "org.jetbrains.kotlin.kapt"
 }
 
 android {
     namespace 'co.highfive.petrolstation'
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk { version = release(36) }
 
     defaultConfig {
         applicationId "co.highfive.petrolstation"
         minSdk 24
         targetSdk 36
+
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // لأنك مستخدم multidex dependency بالقديم
+        multiDexEnabled true
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            // مثل القديم (كان true)
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        // مثل القديم (Java 17)
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
+
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '17'
     }
+
     buildFeatures {
+        // مثل القديم
+        viewBinding true
+        dataBinding true
+        buildConfig true
+
+        // من الجديد
         compose true
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+spotless {
+    format 'misc', {
+        target fileTree('.') {
+            include '**/*.md'
+            include '**/*.gitignore'
+            include '**/*.xml'
+            include '**/*.json'
+            exclude '**/.gradle/**'
+            exclude '**/build/**'
+            exclude '.idea/**'
+        }
+
+        trimTrailingWhitespace()
+        indentWithSpaces()
+        endWithNewline()
+    }
+
+    kotlin {
+        ktlint("1.0.1")
+        target "**/*.kt"
+        endWithNewline()
+    }
+
+    java {
+        endWithNewline()
+        removeUnusedImports()
     }
 }
 
 dependencies {
+    // ===== AndroidX (مرفوع) =====
     implementation libs.androidx.core.ktx
-    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.constraintlayout
+    implementation libs.google.material
+    implementation libs.androidx.recyclerview
+    implementation libs.androidx.cardview
+    implementation libs.androidx.multidex
+
+    // ===== Compose (مرفوع) =====
     implementation libs.androidx.activity.compose
     implementation platform(libs.androidx.compose.bom)
     implementation libs.androidx.compose.ui
     implementation libs.androidx.compose.ui.graphics
     implementation libs.androidx.compose.ui.tooling.preview
     implementation libs.androidx.compose.material3
+    debugImplementation libs.androidx.compose.ui.tooling
+    debugImplementation libs.androidx.compose.ui.test.manifest
+
+    // ===== Tests (مرفوع) =====
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
     androidTestImplementation platform(libs.androidx.compose.bom)
     androidTestImplementation libs.androidx.compose.ui.test.junit4
-    debugImplementation libs.androidx.compose.ui.tooling
-    debugImplementation libs.androidx.compose.ui.test.manifest
+
+    // ===== Modules =====
+    implementation project(path: ':kprogresshud')
+
+    // ===== Firebase (BOM مرفوع) =====
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.crashlytics
+    implementation libs.firebase.analytics
+    implementation libs.firebase.auth
+    implementation libs.firebase.messaging
+
+    // ===== Google Play Services =====
+    implementation libs.play.services.maps
+    implementation libs.play.services.location
+
+    // ===== 3rd-party (قديم + مرفوع قدر الإمكان) =====
+    implementation libs.intuit.sdp
+    implementation libs.gson
+    implementation libs.universal.imageloader
+    implementation libs.roundedimageview
+    implementation libs.android.joda
+//    implementation libs.notification.badge
+    implementation libs.dexter
+    implementation libs.mkloader
+//    implementation libs.airlocation
+    implementation libs.toggle
+    implementation libs.flowlayout
+    implementation libs.snap.time.picker
+    implementation libs.date.time.range.picker
+    implementation(libs.code.scanner) {
+        exclude group: "com.google.zxing", module: "core"
+    }
+
+    implementation libs.flexbox
+//    implementation libs.attachmentmanager
+    implementation libs.pinedittextfield
+//    implementation libs.pdf.viewer
+    implementation libs.popupimageview
+    implementation libs.swipelayout
+
+    // Glide (مرفوع لـ 5.x)
+    implementation libs.glide
+    kapt libs.glide.compiler
+
+    // Epoxy (مرفوع لـ 5.2.0)
+    implementation libs.epoxy
+    implementation libs.epoxy.databinding
+    kapt libs.epoxy.processor
+
+    implementation libs.androidx.room.runtime
+    annotationProcessor libs.androidx.room.compiler
+
+//    implementation libs.sunmi.ui
+    implementation libs.sunmi.printerlibrary
+    implementation files("libs/core-3.3.0.jar") // المحلي
+    implementation files("libs/sunmiui-1.1.27.aar")
+
 }

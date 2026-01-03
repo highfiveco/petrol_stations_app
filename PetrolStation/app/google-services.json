@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "1019280130586",
+    "firebase_url": "https://ebill-63c9b-default-rtdb.firebaseio.com",
+    "project_id": "ebill-63c9b",
+    "storage_bucket": "ebill-63c9b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1019280130586:android:cbc2993a0152fec4c407a3",
+        "android_client_info": {
+          "package_name": "co.highfive.petrolstation"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwDxv4i9tLVuEO3FIzfcZOXQCfKuLc3fo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1019280130586:android:8ad959c7c884a8a1c407a3",
+        "android_client_info": {
+          "package_name": "site.ebill.generator"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwDxv4i9tLVuEO3FIzfcZOXQCfKuLc3fo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

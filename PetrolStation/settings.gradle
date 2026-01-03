@@ -1,23 +1,26 @@
 pluginManagement {
     repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
+
+        // مهم لمكتبات GitHub اللي عندك (com.github.*)
+        maven { url 'https://jitpack.io' }
+
+        // مثل القديم (إذا احتجته بعض المكتبات)
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
     }
 }
 
 rootProject.name = "PetrolStation"
 include ':app'
+include ':kprogresshud'
+
