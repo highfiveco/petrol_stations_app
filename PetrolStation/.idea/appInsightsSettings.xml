@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="co.highfive.petrolstation" />
+                  <option name="mobileSdkAppId" value="1:1019280130586:android:cbc2993a0152fec4c407a3" />
+                  <option name="projectId" value="ebill-63c9b" />
+                  <option name="projectNumber" value="1019280130586" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

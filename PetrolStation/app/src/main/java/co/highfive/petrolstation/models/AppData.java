@@ -37,8 +37,13 @@ public class AppData {
     private int has_move;
     private int has_load;
     private int has_discount;
+    private int customer_invoices;
+    private int customer_fuel_sales;
     private int payment_type_default;
     private int view_statement;
+    private int pos;
+    private int fuel_sales;
+    private int view_invoices;
     private int view_date;
     private int disabled_type_move;
     private AboutApp about_app;
@@ -561,5 +566,45 @@ public class AppData {
 
     public void setUser_company_code(String user_company_code) {
         this.user_company_code = user_company_code;
+    }
+
+    public int getPos() {
+        return pos;
+    }
+
+    public void setPos(int pos) {
+        this.pos = pos;
+    }
+
+    public int getFuel_sales() {
+        return fuel_sales;
+    }
+
+    public void setFuel_sales(int fuel_sales) {
+        this.fuel_sales = fuel_sales;
+    }
+
+    public int getView_invoices() {
+        return view_invoices;
+    }
+
+    public void setView_invoices(int view_invoices) {
+        this.view_invoices = view_invoices;
+    }
+
+    public int getCustomer_fuel_sales() {
+        return customer_fuel_sales;
+    }
+
+    public void setCustomer_fuel_sales(int customer_fuel_sales) {
+        this.customer_fuel_sales = customer_fuel_sales;
+    }
+
+    public int getCustomer_invoices() {
+        return customer_invoices;
+    }
+
+    public void setCustomer_invoices(int customer_invoices) {
+        this.customer_invoices = customer_invoices;
     }
 }

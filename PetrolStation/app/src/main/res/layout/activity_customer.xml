@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:background="@color/white">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="match_parent"
+            android:layout_height="130dp"
+            android:src="@drawable/header_bg"
+            android:scaleType="fitXY"/>
+
+        <RelativeLayout
+            android:id="@+id/icons_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="26dp"
+            android:layout_marginLeft="26dp"
+            android:layout_marginTop="26dp" >
+
+
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/din_regular"
+                    android:textSize="20sp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/white"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/phone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/din_regular"
+                    android:textSize="20sp"
+                    android:layout_marginTop="5dp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/white"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_centerVertical="true"
+                android:layout_alignParentLeft="true">
+
+                <RelativeLayout
+                    android:id="@+id/ic_home"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:padding="8dp">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_home"/>
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/ic_back"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:padding="8dp">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_back_white"/>
+
+                </RelativeLayout>
+
+            </LinearLayout>
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:id="@+id/edit_data_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:visibility="gone"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/edit_data"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/edit_data"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/add_money_transaction_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:visibility="gone"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/add_transaction"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_money_transaction"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/money_account_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:visibility="gone"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/ic_finance_account"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/money_account"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/fuel_sales_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:visibility="gone"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/ic_readings"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/fuel_sales"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tickets_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:padding="16dp"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/ic_reminders"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/reminders"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/logs_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:visibility="gone"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/ic_logs"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/logs"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/send_sms_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:padding="16dp"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/ic_send_sms"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/send_sms"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/add_reminder_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:padding="16dp"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/ic_add_reminder"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_reminder"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/update_phone_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:padding="16dp"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/ic_phone_red"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/update_phone"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/invoices_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:padding="16dp"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/ic_customer_invoices"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/invoices"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/vehicles_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:padding="16dp"
+                android:layout_marginTop="16dp"
+                android:gravity="center|right"
+                android:background="@drawable/edittext_gray_light_bg">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:src="@drawable/ic_customer_vihcels"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicles"
+                    android:textColor="#1F1F39"
+                    android:layout_marginRight="16dp"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+        </LinearLayout>
+
+    </ScrollView>
+
+
+</LinearLayout>

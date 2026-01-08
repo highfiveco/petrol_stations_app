@@ -68,6 +68,7 @@ import java.util.TimeZone;
 
 import co.highfive.petrolstation.BuildConfig;
 import co.highfive.petrolstation.R;
+import co.highfive.petrolstation.activities.CustomerFinancialAccountActivity;
 import co.highfive.petrolstation.activities.ImageViewerActivity;
 import co.highfive.petrolstation.activities.MainActivity;
 import co.highfive.petrolstation.activities.SplashActivity;
@@ -88,6 +89,7 @@ import co.highfive.petrolstation.listener.CheckInternetListener;
 import co.highfive.petrolstation.listener.SuccessListener;
 import co.highfive.petrolstation.listener.UploadListener;
 import co.highfive.petrolstation.models.AppData;
+import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.utils.BluetoothUtil;
 import co.highfive.petrolstation.utils.ESCUtil;
 import co.highfive.petrolstation.utils.SunmiPrintHelper;
@@ -114,6 +116,7 @@ public class BaseActivity extends AppCompatActivity implements Constant {
 
     public boolean connectionAvailable = true;
     CheckInternetConnection checkInternetConnection;
+    protected ApiClient apiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,7 +128,7 @@ public class BaseActivity extends AppCompatActivity implements Constant {
         sessionKeys = new SessionKeys();
         
         baseActivity=this;
-
+        initApiClient();
         appConfig = new AppConfig();
         setBadge(getApplicationContext(),0);
         gsonBuilder = new GsonBuilder();
@@ -150,6 +153,25 @@ public class BaseActivity extends AppCompatActivity implements Constant {
 
         initPrinterStyle();
 
+    }
+    private void initApiClient() {
+        apiClient = new ApiClient(
+                getApplicationContext(),
+                getGson(),
+                new ApiClient.HeaderProvider() {
+                    @Override public String getToken() {
+                        return getSessionManager().getString(getSessionKeys().token);
+                    }
+                    @Override public String getLang() {
+                        String lang = getSessionManager().getString(getSessionKeys().language_code);
+                        return (lang == null || lang.trim().isEmpty()) ? "ar" : lang;
+                    }
+                    @Override public boolean isLoggedIn() {
+                        return getSessionManager().getBoolean(getSessionKeys().isLogin);
+                    }
+                },
+                () -> runOnUiThread(BaseActivity.this::logout)
+        );
     }
 
     private void initPrinterStyle() {
@@ -879,7 +901,7 @@ public class BaseActivity extends AppCompatActivity implements Constant {
 //        files.add(file);
 
         try {
-            new RequestAsyncTask(false, getApplicationContext(), AppConfig.upload_file,fileName,files, keys, values, headerKeys, headerValues, new AsyncResponse() {
+            new RequestAsyncTask(false, getApplicationContext(), AppConfig.testUrl,fileName,files, keys, values, headerKeys, headerValues, new AsyncResponse() {
                 @Override
                 public void processFinish(ResponseObject responseObject) {
                     hideProgressHUD();
@@ -1345,5 +1367,50 @@ public class BaseActivity extends AppCompatActivity implements Constant {
         return  getGson().fromJson(getSessionManager().getString(getSessionKeys().app_data), AppData.class);
     }
 
+    public int getUserSanadFromSession() {
+        try {
+            String raw = getSessionManager().getString(getSessionKeys().app_data);
+            if (raw == null || raw.trim().isEmpty()) return 0;
+
+            AppData appData = getGson().fromJson(raw, AppData.class);
+            return appData != null ? appData.getUser_sanad() : 0;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    public String getCompanyCodeFromSession() {
+        try {
+            String raw = getSessionManager().getString(getSessionKeys().app_data);
+            if (raw == null || raw.trim().isEmpty()) return null;
+
+            AppData appData = getGson().fromJson(raw, AppData.class);
+            return appData != null ? appData.getUser_company_code() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static void setVisible(View v, boolean visible) {
+        if (v == null) return;
+        v.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    public static int safeInt(Integer v) {
+        return v == null ? 0 : v;
+    }
+
+    public static String safe(String s) {
+        return s == null ? "" : s;
+    }
+    public double safeDouble(Object o) {
+        try {
+            if (o == null) return 0.0;
+            if (o instanceof Number) return ((Number) o).doubleValue();
+            return Double.parseDouble(String.valueOf(o));
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
 }
 

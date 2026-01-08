@@ -82,7 +82,12 @@ public class UpdateAppDialog extends DialogFragment {
         LinearLayout sync_layout=  (LinearLayout) customView.findViewById(R.id.sync_layout);
 
             title.setText(update_title);
-            description.setText(baseActivity.getHtmlText(update_description));
+            if(update_description != null){
+                description.setText(baseActivity.getHtmlText(update_description));
+            }else{
+                description.setText("");
+            }
+
 
 
         save.setOnClickListener(new View.OnClickListener() {
@@ -99,10 +104,6 @@ public class UpdateAppDialog extends DialogFragment {
 //                baseActivity.moveToActivity(baseActivity, SyncOfflineDataActivity.class,null,false);
             }
         });
-
-
-
-
 
         return customView;
     }

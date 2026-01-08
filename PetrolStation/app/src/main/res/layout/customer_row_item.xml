@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingRight="16dp"
+    android:paddingLeft="16dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:id="@+id/root_item"
+    android:layoutDirection="rtl">
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/letter_type"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/din_regular"
+        android:includeFontPadding="false"
+        android:textSize="@dimen/_14sdp"
+        android:textColor="#2C2C2C"
+        android:text="test"/>
+
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/ic_check"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_check"
+        android:layout_alignParentLeft="true"/>
+
+</RelativeLayout>

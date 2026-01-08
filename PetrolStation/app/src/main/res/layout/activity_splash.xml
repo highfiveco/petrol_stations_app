@@ -35,6 +35,8 @@
             android:layout_height="wrap_content"
             android:text="@string/management_software"
             android:textSize="35sp"
+            android:gravity="center"
+            android:layout_gravity="center"
             android:fontFamily="@font/din_medium"
             android:includeFontPadding="false"
             android:textColor="@color/white"/>
@@ -44,6 +46,8 @@
             android:layout_height="wrap_content"
             android:text="@string/generateor_subscription"
             android:textSize="35sp"
+            android:gravity="center"
+            android:layout_gravity="center"
             android:includeFontPadding="false"
             android:fontFamily="@font/din_medium"
             android:layout_marginTop="26dp"

@@ -58,4 +58,8 @@
         <item name="android:textSize">@dimen/textSizeSmall</item>
         <item name="android:fontFamily">@font/din_regular</item>
     </style>
+
+    <style name="AppDatePickerDialog" parent="Theme.AppCompat.Light.Dialog">
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
 </resources>

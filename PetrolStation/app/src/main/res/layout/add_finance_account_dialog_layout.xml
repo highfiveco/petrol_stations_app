@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:paddingRight="16dp"
+    android:paddingLeft="16dp"
+    android:paddingBottom="8dp"
+    android:background="@drawable/dialog_background_inset">
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="left"
+        android:layout_margin="16dp">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/add_money_account"
+            android:textSize="16sp"
+            android:layout_centerVertical="true"
+            android:textColor="#5608F3"
+            android:fontFamily="@font/din_medium"/>
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/close"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_gravity="left"
+            android:src="@drawable/ic_rounded_close_blue"/>
+
+    </RelativeLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:scrollbars="none"
+        android:fitsSystemWindows="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/account_type"
+                android:textSize="16sp"
+                android:textColor="#1F1F39"
+                android:fontFamily="@font/din_medium"/>
+
+            <RelativeLayout
+                android:id="@+id/account_type_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edittext_gray_light_bg"
+                android:layout_marginTop="16dp">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/account_type"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:padding="16dp"
+                    android:text="@string/account_type"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:gravity="right"
+                    android:layout_marginLeft="16dp"
+                    android:layout_toRightOf="@+id/ic_account_type"
+                    android:background="@null"/>
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/ic_account_type"
+                    android:layout_width="8dp"
+                    android:layout_height="4dp"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="16dp"
+                    android:src="@drawable/ic_down_arrow_blue"/>
+
+
+            </RelativeLayout>
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/type"
+                android:textSize="16sp"
+                android:textColor="#1F1F39"
+                android:fontFamily="@font/din_medium"/>
+
+            <RelativeLayout
+                android:id="@+id/type_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edittext_gray_light_bg"
+                android:layout_marginTop="16dp">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/type"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:padding="16dp"
+                    android:text="@string/type"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:gravity="right"
+                    android:layout_marginLeft="16dp"
+                    android:layout_toRightOf="@+id/ic_type"
+                    android:background="@null"/>
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/ic_type"
+                    android:layout_width="8dp"
+                    android:layout_height="4dp"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="16dp"
+                    android:src="@drawable/ic_down_arrow_blue"/>
+
+
+            </RelativeLayout>
+
+            <LinearLayout
+                android:id="@+id/customer_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="visible"
+                android:orientation="vertical">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/select_customer"
+                    android:textSize="16sp"
+                    android:layout_marginTop="16dp"
+                    android:textColor="#1F1F39"
+                    android:fontFamily="@font/din_medium"/>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edittext_gray_light_bg"
+                    android:layout_marginTop="16dp">
+
+                    <androidx.appcompat.widget.AppCompatEditText
+                        android:id="@+id/search"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:padding="16dp"
+                        android:fontFamily="@font/din_regular"
+                        android:includeFontPadding="false"
+                        android:gravity="right"
+                        android:inputType="text"
+                        android:imeOptions="actionDone"
+                        android:singleLine="true"
+                        android:hint="@string/customer_orphone"
+                        android:layout_marginLeft="16dp"
+                        android:layout_toRightOf="@+id/ic_show_password"
+                        android:background="@null"/>
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/ic_show_password"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_alignParentLeft="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginLeft="16dp"
+                        android:src="@drawable/ic_search_black"/>
+
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/user_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:orientation="vertical">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/select_user"
+                    android:textSize="16sp"
+                    android:layout_marginTop="16dp"
+                    android:textColor="#1F1F39"
+                    android:fontFamily="@font/din_medium"/>
+
+                <RelativeLayout
+                    android:id="@+id/select_user_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edittext_gray_light_bg"
+                    android:layout_marginTop="16dp">
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/select_user"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:padding="16dp"
+                        android:text="@string/select_user"
+                        android:fontFamily="@font/din_regular"
+                        android:includeFontPadding="false"
+                        android:gravity="right"
+                        android:layout_marginLeft="16dp"
+                        android:layout_toRightOf="@+id/ic_select_user"
+                        android:background="@null"/>
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/ic_select_user"
+                        android:layout_width="8dp"
+                        android:layout_height="4dp"
+                        android:layout_alignParentLeft="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginLeft="16dp"
+                        android:src="@drawable/ic_down_arrow_blue"/>
+
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:id="@+id/account_name_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:orientation="vertical">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/account_name"
+                    android:textSize="16sp"
+                    android:textColor="#1F1F39"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="@font/din_medium"/>
+
+                <androidx.appcompat.widget.AppCompatEditText
+                    android:id="@+id/account_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:padding="20dp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:background="@drawable/edittext_gray_light_bg"/>
+
+            </LinearLayout>
+
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/currency"
+                android:textSize="16sp"
+                android:layout_marginTop="16dp"
+                android:textColor="#1F1F39"
+                android:fontFamily="@font/din_medium"/>
+
+            <RelativeLayout
+                android:id="@+id/currency_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edittext_gray_light_bg"
+                android:layout_marginTop="16dp">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/currency"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:padding="16dp"
+                    android:text="@string/currency"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:gravity="right"
+                    android:layout_marginLeft="16dp"
+                    android:layout_toRightOf="@+id/ic_currency"
+                    android:background="@null"/>
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/ic_currency"
+                    android:layout_width="8dp"
+                    android:layout_height="4dp"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="16dp"
+                    android:src="@drawable/ic_down_arrow_blue"/>
+
+
+            </RelativeLayout>
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/notes"
+                android:textSize="16sp"
+                android:textColor="#1F1F39"
+                android:layout_marginTop="16dp"
+                android:layout_marginLeft="16dp"
+                android:layout_marginRight="16dp"
+                android:fontFamily="@font/din_medium"/>
+
+            <androidx.appcompat.widget.AppCompatEditText
+                android:id="@+id/notes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:padding="20dp"
+                android:fontFamily="@font/din_regular"
+                android:includeFontPadding="false"
+                android:layout_marginLeft="16dp"
+                android:layout_marginRight="16dp"
+                android:background="@drawable/edittext_gray_light_bg"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="26dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginBottom="26dp"
+                android:layout_marginLeft="16dp">
+
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/save"
+                    android:layout_width="match_parent"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_button"
+                    android:padding="10dp"
+                    android:layout_marginRight="40dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginLeft="40dp"
+                    android:textColor="@color/white"
+                    android:gravity="center"
+                    android:fontFamily="@font/din_medium"
+                    android:textSize="15sp"
+                    android:text="@string/save"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

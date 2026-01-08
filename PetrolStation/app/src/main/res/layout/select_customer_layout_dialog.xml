@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:padding="16dp"
+    android:layoutDirection="rtl"
+    android:background="@color/white"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/select_customer"
+        android:textSize="@dimen/_18sdp"
+        android:textColor="#2C2C2C"
+        android:paddingRight="16dp"
+        android:layout_weight="1"
+        android:layout_gravity="center"
+        android:fontFamily="@font/din_medium"
+        android:includeFontPadding="false"/>
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycle_customer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="26dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginLeft="20dp"
+        android:orientation="horizontal">
+
+
+
+        <RelativeLayout
+            android:id="@+id/back"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.50"
+            android:layout_marginLeft="10dp"
+            android:paddingRight="26dp"
+            android:paddingLeft="26dp"
+            android:layout_gravity="center"
+            android:background="@drawable/rounded_transparent_blue_border"
+            android:paddingBottom="20dp"
+            android:paddingTop="20dp">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/hide"
+                android:layout_centerInParent="true"
+                android:textColor="#778CA2"
+                android:fontFamily="@font/din_medium"
+                android:includeFontPadding="false"
+                android:textSize="@dimen/_14sdp"/>
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/confirm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingRight="26dp"
+            android:paddingLeft="26dp"
+            android:layout_weight="0.50"
+            android:layout_marginRight="10dp"
+            android:layout_gravity="center"
+            android:background="@drawable/rounded_button"
+            android:paddingBottom="20dp"
+            android:paddingTop="20dp">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/confirm"
+                android:layout_centerInParent="true"
+                android:textColor="@android:color/white"
+                android:fontFamily="@font/din_medium"
+                android:includeFontPadding="false"
+                android:textSize="@dimen/_14sdp"/>
+
+        </RelativeLayout>
+    </LinearLayout>
+
+</LinearLayout>

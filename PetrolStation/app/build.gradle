@@ -174,4 +174,5 @@ dependencies {
     implementation files("libs/core-3.3.0.jar") // المحلي
     implementation files("libs/sunmiui-1.1.27.aar")
 
+    implementation libs.androidx.swipe.refresh.layout
 }

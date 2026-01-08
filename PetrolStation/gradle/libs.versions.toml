@@ -59,6 +59,8 @@ room = "2.8.4"
 sunmiui = "1.1.27"
 sunmiPrinter = "1.0.18"
 
+swipeRefreshLayout = "1.1.0"
+
 [libraries]
 # AndroidX
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -134,6 +136,7 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 androidx-room-common = { group = "androidx.room", name = "room-common", version.ref = "room" }
 sunmi-ui = { group = "com.sunmi", name = "sunmiui", version.ref = "sunmiui" }
 sunmi-printerlibrary = { group = "com.sunmi", name = "printerlibrary", version.ref = "sunmiPrinter" }
+androidx-swipe-refresh-layout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swipeRefreshLayout" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

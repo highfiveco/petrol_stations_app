@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name_ar">ادارة محطات الوقود</string>
+    <string name="app_name_ar">ادارة محطات البترول</string>
 
 
     <string name="am">A.m</string>
@@ -14,7 +14,7 @@
     <string name="skip">تخطي</string>
     <string name="channel_id">palaifapp</string>
     <string name="management_software">بــــــرنـــــــــامـــــــــــج إدارة</string>
-    <string name="generateor_subscription">اشتراكات محطات الوقود</string>
+    <string name="generateor_subscription"> محطات البترول</string>
     <string name="design_programming">تصميم وبرمجة</string>
     <string name="high_five">هاي فايف</string>
     <string name="username">اسم المستخدم</string>
@@ -295,5 +295,18 @@
     <string name="sync_all_in_progress">لا يمكن بدء المزامنة الفردية قبل انتهاء مزامنة الكل</string>
     <string name="customer_not_found">الزبون غير موجود يرجى التأكد من تحديث البيانات حتى تستطيع استخدام التطبيق بدون انترنت</string>
     <string name="must_sync_data_before_update">يجب عليك ترحيل جميع البيانات قبل عملية تحديث البيانات</string>
+    <string name="allow_permission">السماح بالصلاحية</string>
+    <string name="pos">نقطة البيع</string>
+    <string name="fule_sale">بيع المحروقات</string>
+    <string name="invoices">الفواتير</string>
+    <string name="vehicles">المركبات</string>
+    <string name="campaign">الحملة</string>
+    <string name="remaining_amount">الكمية المتبقيه من الحملة المتبقية</string>
+    <string name="fuel_sales">حركات التعبئة</string>
+    <string name="done">تمت العملية بنجاح</string>
+    <string name="category">الصنف</string>
+    <string name="move_date">تاريخ الحركة</string>
+    <string name="campaign_name">الحملة</string>
+    <string name="count">الكمية</string>
 
 </resources>

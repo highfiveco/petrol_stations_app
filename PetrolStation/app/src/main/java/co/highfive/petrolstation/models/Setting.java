@@ -3,6 +3,7 @@ package co.highfive.petrolstation.models;
 public class Setting {
     private String id;
     private String name;
+    private String address;
     private String key_words;
     private String description;
     private String mobile;
@@ -285,5 +286,13 @@ public class Setting {
 
     public void setWeekly_calculation(int weekly_calculation) {
         this.weekly_calculation = weekly_calculation;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 }
