@@ -71,7 +71,8 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.ViewHolder> {
                     baseActivity.moveToActivity(baseActivity, FuelSaleActivity.class, null, false);
                     break;
                 case 9: // invoices
-                    baseActivity.moveToActivity(baseActivity, InvoicesActivity.class, null, false);
+
+                    baseActivity.moveToActivity(baseActivity, CustomerInvoicesActivity.class, null, false);
                     break;
                 case 10: // about
                     baseActivity.moveToActivity(baseActivity, AboutActivity.class, null, false);

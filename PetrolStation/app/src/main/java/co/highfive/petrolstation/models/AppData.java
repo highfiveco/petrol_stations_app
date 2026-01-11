@@ -20,6 +20,7 @@ public class AppData {
     private int view_financial_move;
     private int update_customers;
     private int add_customers;
+    private int view_customer_vehicles;
     private int view_reminders;
     private int add_reminders;
     private int delete_reminders;
@@ -606,5 +607,13 @@ public class AppData {
 
     public void setCustomer_invoices(int customer_invoices) {
         this.customer_invoices = customer_invoices;
+    }
+
+    public int getView_customer_vehicles() {
+        return view_customer_vehicles;
+    }
+
+    public void setView_customer_vehicles(int view_customer_vehicles) {
+        this.view_customer_vehicles = view_customer_vehicles;
     }
 }

@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:cardCornerRadius="@dimen/_20sdp"
+    android:layout_margin="10dp"
+    android:layoutDirection="rtl"
+    app:cardBackgroundColor="#F9F9FB">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center|right"
+                android:layout_weight="1"
+                android:layout_margin="16dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="29dp"
+                    android:layout_height="29dp"
+                    android:src="@drawable/ic_vehicles_number"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/vehicles_number"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicles_number"
+                    android:layout_marginRight="16dp"
+                    android:fontFamily="@font/din_regular"
+                    android:textSize="16sp"
+                    android:textColor="#6D707C"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E3E3E5"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center|right"
+                android:layout_weight="1"
+                android:layout_margin="16dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="29dp"
+                    android:layout_height="29dp"
+                    android:src="@drawable/ic_vehicles_type"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/vehicles_type"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicles_type"
+                    android:layout_marginRight="16dp"
+                    android:fontFamily="@font/din_regular"
+                    android:textSize="16sp"
+                    android:textColor="#6D707C"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/edit_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center|right"
+                android:layout_weight="1"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:layout_marginLeft="10dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="29dp"
+                    android:layout_height="29dp"
+                    android:src="@drawable/ic_edit"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/price"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/edit"
+                    android:layout_marginRight="16dp"
+                    android:fontFamily="@font/din_regular"
+                    android:textSize="15sp"
+                    android:textColor="#6D707C"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E3E3E5"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center|right"
+                android:layout_weight="1"
+                android:layout_margin="16dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="29dp"
+                    android:layout_height="29dp"
+                    android:src="@drawable/ic_color"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/color"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/color"
+                    android:layout_marginRight="16dp"
+                    android:fontFamily="@font/din_regular"
+                    android:textSize="16sp"
+                    android:textColor="#6D707C"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center|right"
+                android:layout_weight="1"
+                android:layout_margin="16dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="29dp"
+                    android:layout_height="29dp"
+                    android:src="@drawable/ic_model"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/model"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/model"
+                    android:layout_marginRight="16dp"
+                    android:fontFamily="@font/din_regular"
+                    android:textSize="16sp"
+                    android:textColor="#6D707C"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E3E3E5"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center|right"
+                android:layout_weight="1"
+                android:layout_margin="16dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="29dp"
+                    android:layout_height="29dp"
+                    android:src="@drawable/ic_license_expiry_date_"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/license_expiry_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/license_expiry_date"
+                    android:layout_marginRight="16dp"
+                    android:fontFamily="@font/din_regular"
+                    android:textSize="16sp"
+                    android:textColor="#6D707C"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

@@ -308,5 +308,35 @@
     <string name="move_date">تاريخ الحركة</string>
     <string name="campaign_name">الحملة</string>
     <string name="count">الكمية</string>
+    <string name="vehicles_number">"رقم المركبة "</string>
+    <string name="vehicles_type">النوع</string>
+    <string name="edit">تعديل</string>
+    <string name="color">اللون</string>
+    <string name="model">الموديل</string>
+    <string name="license_expiry_date">تاريخ نهاية الترخيص</string>
+    <string name="vehicles_view">عرض المركبات</string>
+    <string name="add_veh">اضافة مركبة</string>
+    <string name="vehicle_type">نوع المركبة</string>
+    <string name="add_vehicles">اضافة مركبة</string>
+    <string name="vehicle_color">لون المركبة</string>
+    <string name="vehicle_model">موديل المركبة</string>
+    <string name="vehicle_number">رقم المركبة</string>
+    <string name="vehicle_license_expiry_date">تاريخ نهاية الترخيص</string>
+    <string name="open_pdf">فتح ملف PDF</string>
+    <string name="boxes_selected">صناديق محددة</string>
+    <string name="success">تمت العملية بنجاح</string>
+    <string name="invoice_number">رقم الفاتورة</string>
+    <string name="invoice_date">تاريخ الفاتورة</string>
+    <string name="invoice_view">عرض</string>
+    <string name="invoice_amount">المبلغ</string>
+    <string name="invoice_print">طباعة</string>
+    <string name="customer_name">اسم الزبون</string>
+    <string name="invoice">الفاتورة</string>
+    <string name="invoice_total">اجمالي الفاتورة</string>
+    <string name="partial_paid">المبلغ المدفوع جزئي</string>
+    <string name="amount_to_pay">المبلغ للدفع</string>
+    <string name="invoice_remaining_amount">المبلغ المتبقي</string>
+    <string name="paid_amount">المبلغ المدفوع</string>
+    <string name="customer_classify">تصنيف الزبون</string>
 
 </resources>

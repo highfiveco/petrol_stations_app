@@ -166,6 +166,10 @@
         <activity
             android:name=".activities.AddReturnActivity"
             android:exported="true" />
+
+        <activity
+            android:name=".activities.InvoiceDetailsActivity"
+            android:exported="true" />
     </application>
 
 </manifest>

@@ -7,8 +7,9 @@ public class Customer {
     private String account_id;
     private String name;
     private String mobile;
+    private String customer_classify;
+    private String customer_classify_name;
     private String status;
-    private String status_name;
     private String customer_status;
     private String balance;
     private String accumulated_account;
@@ -166,13 +167,7 @@ public class Customer {
         this.account_id = account_id;
     }
 
-    public String getStatus_name() {
-        return status_name;
-    }
 
-    public void setStatus_name(String status_name) {
-        this.status_name = status_name;
-    }
 
     public String getApp_type() {
         return app_type;
@@ -660,5 +655,21 @@ public class Customer {
 
     public void setName_currency(String name_currency) {
         this.name_currency = name_currency;
+    }
+
+    public String getCustomer_classify() {
+        return customer_classify;
+    }
+
+    public void setCustomer_classify(String customer_classify) {
+        this.customer_classify = customer_classify;
+    }
+
+    public String getCustomer_classify_name() {
+        return customer_classify_name;
+    }
+
+    public void setCustomer_classify_name(String customer_classify_name) {
+        this.customer_classify_name = customer_classify_name;
     }
 }

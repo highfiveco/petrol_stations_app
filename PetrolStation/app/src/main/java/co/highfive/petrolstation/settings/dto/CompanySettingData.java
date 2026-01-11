@@ -38,7 +38,7 @@ public class CompanySettingData {
 
     @SerializedName("customer_invoices") public Integer customer_invoices;
     @SerializedName("customer_fuel_sales") public Integer customer_fuel_sales;
-    @SerializedName("financial") public Integer financial;
+    @SerializedName("co/highfive/petrolstation/financial") public Integer financial;
     @SerializedName("customers") public Integer customers;
     @SerializedName("fund_financial") public Integer fund_financial;
 

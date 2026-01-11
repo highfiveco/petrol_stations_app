@@ -2,6 +2,7 @@ package co.highfive.petrolstation.activities;
 
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 
@@ -37,7 +38,6 @@ public class CustomersActivity extends BaseActivity {
 
     private ActivityCustomersBinding binding;
     private CustomerAdapter adapter;
-    private ApiClient apiClient;
 
     // paging
     private int currentPage = 1;
@@ -57,32 +57,24 @@ public class CustomersActivity extends BaseActivity {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_customers);
         setupUI(binding.mainLayout);
 
-        initApiClient();
+        applyPermissions();
         initViews();
+        initClicks();
 
         // ✅ لا تعمل request عند فتح الصفحة
         adapter.setItems(customers);
     }
 
-    private void initApiClient() {
-        apiClient = new ApiClient(
-                getApplicationContext(),
-                getGson(),
-                new ApiClient.HeaderProvider() {
-                    @Override public String getToken() {
-                        return getSessionManager().getString(getSessionKeys().token);
-                    }
-                    @Override public String getLang() {
-                        String lang = getSessionManager().getString(getSessionKeys().language_code);
-                        return (lang == null || lang.trim().isEmpty()) ? "ar" : lang;
-                    }
-                    @Override public boolean isLoggedIn() {
-                        return getSessionManager().getBoolean(getSessionKeys().isLogin);
-                    }
-                },
-                () -> runOnUiThread(this::logout)
-        );
+    private void initClicks() {
+
+        binding.add.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                moveToActivity(CustomersActivity.this,EditCustomerActivity.class,null,false);
+            }
+        });
     }
+
 
     private void initViews() {
         adapter = new CustomerAdapter(new CustomerAdapter.CustomerItemListener() {
@@ -166,6 +158,25 @@ public class CustomersActivity extends BaseActivity {
                 }
             }
         });
+
+
+        binding.add.setVisibility(View.VISIBLE);
+    }
+
+    private void applyPermissions() {
+
+
+        if (getAppData() == null) {
+            hideAllActions();
+            return;
+        }
+
+        int addCustomers = safeInt(getAppData().getAdd_customers());
+        setVisible(binding.add, addCustomers == 1);
+
+    }
+    private void hideAllActions() {
+        setVisible(binding.add, false);
     }
     private Bundle buildCustomerBundle(CustomerDto customerDto) {
         Bundle b = new Bundle();

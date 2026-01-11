@@ -1,6 +1,10 @@
 package co.highfive.petrolstation.models;
 
-public class Currency {
+import java.io.Serializable;
+
+public class Currency implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String id;
     private String name;
 

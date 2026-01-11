@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp"
+    android:layoutDirection="rtl"
+    android:gravity="center_vertical">
+
+
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/tv_qty"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="start"
+        android:text="x1"
+        android:textSize="13sp"
+        android:textDirection="rtl"
+        android:textColor="#6D707C"
+        android:includeFontPadding="false"
+        android:fontFamily="@font/din_regular"/>
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/tv_price"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textSize="18sp"
+        android:textColor="#1F1F39"
+        android:includeFontPadding="false"
+        android:fontFamily="@font/din_regular"/>
+
+</LinearLayout>

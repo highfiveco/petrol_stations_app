@@ -38,7 +38,6 @@ public class CustomerActivity extends BaseActivity {
     private String customerName;
     private String customerMobile;
 
-    private ApiClient apiClient;
     private AddReminderDialog addReminderDialog;
     private SendSmsDialog sendSmsDialog;
     private UpdatePhoneDialog updatePhoneDialog;
@@ -51,7 +50,6 @@ public class CustomerActivity extends BaseActivity {
         setContentView(binding.getRoot());
 
 
-        initApiClient();
         readExtras();
         initHeader();
         applyPermissions();
@@ -119,25 +117,6 @@ public class CustomerActivity extends BaseActivity {
         );
     }
 
-    private void initApiClient() {
-        apiClient = new ApiClient(
-                getApplicationContext(),
-                getGson(),
-                new ApiClient.HeaderProvider() {
-                    @Override public String getToken() {
-                        return getSessionManager().getString(getSessionKeys().token);
-                    }
-                    @Override public String getLang() {
-                        String lang = getSessionManager().getString(getSessionKeys().language_code);
-                        return (lang == null || lang.trim().isEmpty()) ? "ar" : lang;
-                    }
-                    @Override public boolean isLoggedIn() {
-                        return getSessionManager().getBoolean(getSessionKeys().isLogin);
-                    }
-                },
-                () -> runOnUiThread(CustomerActivity.this::logout)
-        );
-    }
 
 
     private void readExtras() {
@@ -188,10 +167,7 @@ public class CustomerActivity extends BaseActivity {
         int updateMobile = safeInt(getAppData().getUpdate_mobile());
         int invoices = safeInt(getAppData().getCustomer_invoices());
         int fuel_sales = safeInt(getAppData().getFuel_sales());
-
-        // ✅ من التصميم الجديد: readings/edit_last_readings صاروا fuel_sales (حسب اللي بعثته)
-        // فإذا في appData عندك permission لفيويل سيلز/قراءات، خلّيه لاحقاً
-        // حالياً بخليه يظهر لو view_financial_move أو حسب اللي تحب تغيّره لاحقاً.
+        int view_customer_vehicles = safeInt(getAppData().getView_customer_vehicles());
 
         setVisible(binding.editDataLayout, updateCustomers == 1);
         setVisible(binding.moneyAccountLayout, viewFinancialMove == 1);
@@ -212,8 +188,7 @@ public class CustomerActivity extends BaseActivity {
 
         // invoices + vehicles: حسب permissions اللي عندك بالـ app_data (ذكرت view_customer_vehicles)
 //        int viewCustomerVehicles = safeInt(getAppData().getView_customer_vehicles());
-        int viewCustomerVehicles = 1;
-        setVisible(binding.vehiclesLayout, viewCustomerVehicles == 1);
+        setVisible(binding.vehiclesLayout, view_customer_vehicles == 1);
 
         // invoices permission مش ظاهر عندك بالـ JSON المرجعي كحقل صريح
         // فحالياً نخليه GONE. إذا عندك flag لاحقاً (مثلاً view_invoices) ابعته ونربطه.
@@ -223,7 +198,6 @@ public class CustomerActivity extends BaseActivity {
     private void initClicks() {
 
         binding.editDataLayout.setOnClickListener(v -> {
-            // نفس القديم: EditCustomerActivity result 202
             Bundle bundle = buildCustomerBundle();
             moveToActivityWithResult(CustomerActivity.this, EditCustomerActivity.class, bundle, false, 202);
         });

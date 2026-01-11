@@ -2,6 +2,8 @@ package co.highfive.petrolstation.customers.dto;
 
 import com.google.gson.annotations.SerializedName;
 
+import co.highfive.petrolstation.fuelsale.dto.FuelItemDto;
+
 public class InvoiceDetailDto {
     @SerializedName("id") public int id;
     @SerializedName("item_id") public Integer item_id;
@@ -11,5 +13,5 @@ public class InvoiceDetailDto {
     @SerializedName("invoice_id") public Integer invoice_id;
 
     // نخزن item JSON في Room
-    @SerializedName("item") public Object item;
+    @SerializedName("item") public FuelItemDto item;
 }

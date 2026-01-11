@@ -29,10 +29,8 @@ public class NotificationsActivity extends BaseActivity {
 
     private ActivityNotificationsBinding binding;
     private NotificationAdapter adapter;
-    private ApiClient apiClient;
 
     private int currentPage = 1;
-    private final int pageSize = 10;
     private boolean isLoading = false;
     private boolean hasMore = true;
     private final ArrayList<Notification> notifications = new ArrayList<>();
@@ -42,30 +40,10 @@ public class NotificationsActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_notifications);
         setupUI(binding.mainLayout);
-        initApiClient();
         initViews();
         loadPage(1, true);
     }
 
-    private void initApiClient() {
-        apiClient = new ApiClient(
-                getApplicationContext(),
-                getGson(),
-                new ApiClient.HeaderProvider() {
-                    @Override public String getToken() {
-                        return getSessionManager().getString(getSessionKeys().token);
-                    }
-                    @Override public String getLang() {
-                        String lang = getSessionManager().getString(getSessionKeys().language_code);
-                        return (lang == null || lang.trim().isEmpty()) ? "ar" : lang;
-                    }
-                    @Override public boolean isLoggedIn() {
-                        return getSessionManager().getBoolean(getSessionKeys().isLogin);
-                    }
-                },
-                () -> runOnUiThread(this::logout)
-        );
-    }
 
     private void initViews() {
         adapter = new NotificationAdapter(this);
@@ -96,7 +74,6 @@ public class NotificationsActivity extends BaseActivity {
             }
         });
     }
-
     private void loadPage(int page, boolean showDialog) {
         if (isLoading) return;
         isLoading = true;
@@ -108,7 +85,7 @@ public class NotificationsActivity extends BaseActivity {
                 "page", String.valueOf(page)
         );
 
-        Type type = new TypeToken<BaseResponse<List<Notification>>>() {}.getType();
+        Type type = new TypeToken<BaseResponse<co.highfive.petrolstation.notifications.dto.NotificationsResponseDto>>() {}.getType();
 
         apiClient.request(
                 Constant.REQUEST_GET,
@@ -117,22 +94,36 @@ public class NotificationsActivity extends BaseActivity {
                 null,
                 type,
                 0,
-                new ApiCallback<List<Notification>>() {
+                new ApiCallback<co.highfive.petrolstation.notifications.dto.NotificationsResponseDto>() {
                     @Override
-                    public void onSuccess(List<Notification> data, String message, String rawJson) {
+                    public void onSuccess(co.highfive.petrolstation.notifications.dto.NotificationsResponseDto dto,
+                                          String message,
+                                          String rawJson) {
+
                         hideProgressHUD();
                         binding.swipeRefreshLayout.setRefreshing(false);
                         adapter.setLoading(false);
                         isLoading = false;
 
                         if (page == 1) notifications.clear();
-                        if (data != null && !data.isEmpty()) {
-                            notifications.addAll(data);
+
+                        List<Notification> list = (dto != null) ? dto.getData() : null;
+
+                        if (list != null && !list.isEmpty()) {
+                            notifications.addAll(list);
                             adapter.setItems(notifications);
                             currentPage = page;
-                            hasMore = data.size() >= pageSize;
+                        }
+
+                        // Pagination (source of truth)
+                        co.highfive.petrolstation.notifications.dto.Pagination p =
+                                (dto != null) ? dto.getPagination() : null;
+
+                        if (p != null) {
+                            hasMore = p.getCurrent_page() < p.getLast_page();
                         } else {
-                            hasMore = false;
+                            // fallback (if API didn't send pagination for any reason)
+                            hasMore = list != null && !list.isEmpty();
                         }
                     }
 
@@ -171,4 +162,6 @@ public class NotificationsActivity extends BaseActivity {
                 }
         );
     }
+
+
 }

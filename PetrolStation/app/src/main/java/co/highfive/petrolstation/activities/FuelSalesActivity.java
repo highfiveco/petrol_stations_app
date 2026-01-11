@@ -376,29 +376,8 @@ public class FuelSalesActivity extends BaseActivity {
         }
     }
 
-    private static String formatNumber(double v) {
-        // لو بدك بدون كسور دائماً: رجّع (long)
-        // حالياً: لو رقم صحيح يطلع بدون .0
-        if (Math.abs(v - Math.round(v)) < 0.000001) return String.valueOf((long) Math.round(v));
-        return String.valueOf(v);
-    }
-    private void printDashedLine() {
-        // متقطعة (خفيفة) مثل الصورة
-        SunmiPrintHelper.getInstance().printTable(
-                new String[]{"- - - - - - - - - - - - - - - -"},
-                new int[]{1},
-                new int[]{1}
-        );
-    }
 
-    private void printLine() {
-        // متقطعة (خفيفة) مثل الصورة
-        SunmiPrintHelper.getInstance().printTable(
-                new String[]{"________________________________"},
-                new int[]{1},
-                new int[]{1}
-        );
-    }
+
     private void initRefresh() {
         binding.swipeRefreshLayout.setOnRefreshListener(() -> refreshFirstPage(false));
     }

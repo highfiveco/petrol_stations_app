@@ -92,4 +92,7 @@ public class Endpoints {
 
     // Notifications
     public static final String GETNOTIFICATIONS = "/api/getNotifications";
+    public static final String FUND_TOTAL_PAYMENTS = "/api/fund/total-payments";
+
+
 }

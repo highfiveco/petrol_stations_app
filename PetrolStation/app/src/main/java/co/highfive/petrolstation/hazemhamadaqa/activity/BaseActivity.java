@@ -72,6 +72,8 @@ import co.highfive.petrolstation.activities.CustomerFinancialAccountActivity;
 import co.highfive.petrolstation.activities.ImageViewerActivity;
 import co.highfive.petrolstation.activities.MainActivity;
 import co.highfive.petrolstation.activities.SplashActivity;
+import co.highfive.petrolstation.customers.dto.InvoiceDetailDto;
+import co.highfive.petrolstation.customers.dto.InvoiceDto;
 import co.highfive.petrolstation.fragments.UpdateAppDialog;
 import co.highfive.petrolstation.hazemhamadaqa.Http.HttpRequest.RequestAsyncTask;
 import co.highfive.petrolstation.hazemhamadaqa.Http.HttpResponse.AsyncResponse;
@@ -89,6 +91,9 @@ import co.highfive.petrolstation.listener.CheckInternetListener;
 import co.highfive.petrolstation.listener.SuccessListener;
 import co.highfive.petrolstation.listener.UploadListener;
 import co.highfive.petrolstation.models.AppData;
+import co.highfive.petrolstation.models.Setting;
+import co.highfive.petrolstation.models.TableItem;
+import co.highfive.petrolstation.models.User;
 import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.utils.BluetoothUtil;
 import co.highfive.petrolstation.utils.ESCUtil;
@@ -116,7 +121,7 @@ public class BaseActivity extends AppCompatActivity implements Constant {
 
     public boolean connectionAvailable = true;
     CheckInternetConnection checkInternetConnection;
-    protected ApiClient apiClient;
+    public ApiClient apiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -1411,6 +1416,303 @@ public class BaseActivity extends AppCompatActivity implements Constant {
         } catch (Exception e) {
             return 0.0;
         }
+    }
+    public void printInvoice(Setting setting, InvoiceDto invoice) {
+        try {
+            if (setting == null || invoice == null) return;
+
+            int no_of_copy = 1;
+            try {
+                if (setting.getNo_print_copies() != null) {
+                    no_of_copy = Integer.parseInt(setting.getNo_print_copies());
+                }
+            } catch (Exception ignored) {}
+
+            // user from session
+            User user = null;
+            try {
+                user = getGson().fromJson(
+                        getSessionManager().getString(getSessionKeys().userJson),
+                        User.class
+                );
+            } catch (Exception ignored) {}
+
+            java.text.SimpleDateFormat sdf =
+                    new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ENGLISH);
+            String printedAt = sdf.format(new java.util.Date());
+            String printedBy = (user != null && user.getName() != null && !user.getName().trim().isEmpty())
+                    ? user.getName().trim()
+                    : "-";
+
+            for (int copy = 0; copy < no_of_copy; copy++) {
+
+                // =========================
+                // Header (Station Name + Address)
+                // =========================
+                SunmiPrintHelper.getInstance().changeFontBold();
+                SunmiPrintHelper.getInstance().setAlign(1);
+
+                String stationName = safe(setting.getName());
+                String stationAddress = safe(setting.getAddress());
+
+                if (!stationName.isEmpty()) {
+                    SunmiPrintHelper.getInstance().printTable(new String[]{stationName}, new int[]{1}, new int[]{1});
+                }
+                if (!stationAddress.isEmpty()) {
+                    SunmiPrintHelper.getInstance().printTable(new String[]{stationAddress}, new int[]{1}, new int[]{1});
+                }
+
+                SunmiPrintHelper.getInstance().cancelFontBold();
+
+                // dashed separator
+                printDashedLine();
+
+                // =========================
+                // Invoice Basic Info (Customer / Invoice No / Date)
+                // =========================
+                SunmiPrintHelper.getInstance().setAlign(2);
+                SunmiPrintHelper.getInstance().changeFontBold();
+
+                String customerName = (invoice.account != null) ? safe(invoice.account.getAccount_name()) : "";
+                String invoiceNo = safe(invoice.invoice_no);
+                String invoiceDate = safe(invoice.date);
+
+                SunmiPrintHelper.getInstance().printTable(
+                        new String[]{"الاسم : " + (customerName.isEmpty() ? "-" : customerName)},
+                        new int[]{1},
+                        new int[]{2}
+                );
+
+                SunmiPrintHelper.getInstance().printTable(
+                        new String[]{"رقم الفاتورة : " + (invoiceNo.isEmpty() ? "-" : invoiceNo)},
+                        new int[]{1},
+                        new int[]{2}
+                );
+
+                SunmiPrintHelper.getInstance().printTable(
+                        new String[]{"التاريخ : " + (invoiceDate.isEmpty() ? "-" : invoiceDate)},
+                        new int[]{1},
+                        new int[]{2}
+                );
+
+                SunmiPrintHelper.getInstance().cancelFontBold();
+
+                // dashed separator
+                printDashedLine();
+
+                // =========================
+                // Items Table Header (الإجمالي | السعر | الكمية | الصنف)
+                // =========================
+                java.util.LinkedList<TableItem> itemsHeader = new java.util.LinkedList<>();
+                itemsHeader.add(new TableItem(
+                        new String[]{"الإجمالي", "السعر", "الكمية", "الصنف"},
+                        new int[]{2, 2, 2, 4},
+                        new int[]{1, 1, 1, 2}
+                ));
+
+                SunmiPrintHelper.getInstance().changeFontBold();
+                for (TableItem t : itemsHeader) {
+                    SunmiPrintHelper.getInstance().printTable(t.getText(), t.getWidth(), t.getAlign());
+                }
+                SunmiPrintHelper.getInstance().cancelFontBold();
+
+                printLine();
+
+                // =========================
+                // Items Rows
+                // =========================
+                if (invoice.details != null && !invoice.details.isEmpty()) {
+                    for (int i = 0; i < invoice.details.size(); i++) {
+                        InvoiceDetailDto d = invoice.details.get(i);
+                        if (d == null) continue;
+
+                        String itemName = "-";
+                        try {
+                            if (d.item != null && d.item.name != null && !d.item.name.trim().isEmpty()) {
+                                itemName = d.item.name.trim();
+                            }
+                        } catch (Exception ignored) {}
+
+                        double qty = safeDouble(d.count);
+                        double price = safeDouble(d.price);
+                        double lineTotal = qty * price;
+
+                        java.util.LinkedList<TableItem> row = new java.util.LinkedList<>();
+                        row.add(new TableItem(
+                                new String[]{
+                                        formatNumber(lineTotal),
+                                        formatNumber(price),
+                                        formatNumber(qty),
+                                        itemName
+                                },
+                                new int[]{2, 2, 2, 4},
+                                new int[]{1, 1, 1, 2}
+                        ));
+
+                        for (TableItem t : row) {
+                            SunmiPrintHelper.getInstance().printTable(t.getText(), t.getWidth(), t.getAlign());
+                        }
+                    }
+                } else {
+                    SunmiPrintHelper.getInstance().printTable(
+                            new String[]{"لا توجد أصناف"},
+                            new int[]{1},
+                            new int[]{1}
+                    );
+                }
+
+                // dashed separator
+                printDashedLine();
+
+                // =========================
+                // Totals
+                // =========================
+                double total = safeDouble(invoice.total);
+                double discount = safeDouble(invoice.discount);
+                double payAmount = safeDouble(invoice.pay_amount);
+
+                SunmiPrintHelper.getInstance().changeFontBold();
+
+                java.util.LinkedList<TableItem> totalRow = new java.util.LinkedList<>();
+                totalRow.add(new TableItem(
+                        new String[]{formatNumber(total), "الإجمالي"},
+                        new int[]{3, 3},
+                        new int[]{0, 2}
+                ));
+
+                for (TableItem t : totalRow) {
+                    SunmiPrintHelper.getInstance().printTable(t.getText(), t.getWidth(), t.getAlign());
+                }
+
+                if (discount > 0) {
+                    java.util.LinkedList<TableItem> discRow = new java.util.LinkedList<>();
+                    discRow.add(new TableItem(
+                            new String[]{formatNumber(discount), "الخصم"},
+                            new int[]{3, 3},
+                            new int[]{0, 2}
+                    ));
+                    for (TableItem t : discRow) {
+                        SunmiPrintHelper.getInstance().printTable(t.getText(), t.getWidth(), t.getAlign());
+                    }
+                }
+
+                if (payAmount > 0) {
+                    java.util.LinkedList<TableItem> payRow = new java.util.LinkedList<>();
+                    payRow.add(new TableItem(
+                            new String[]{formatNumber(payAmount), "المدفوع"},
+                            new int[]{3, 3},
+                            new int[]{0, 2}
+                    ));
+                    for (TableItem t : payRow) {
+                        SunmiPrintHelper.getInstance().printTable(t.getText(), t.getWidth(), t.getAlign());
+                    }
+                }
+
+                SunmiPrintHelper.getInstance().cancelFontBold();
+
+                // dashed separator
+                printDashedLine();
+
+                // =========================
+                // Notes (optional)
+                // =========================
+                String notes = safe(invoice.notes);
+                if (!notes.isEmpty()) {
+                    SunmiPrintHelper.getInstance().setAlign(2);
+                    SunmiPrintHelper.getInstance().printTable(
+                            new String[]{"ملاحظات : " + notes},
+                            new int[]{1},
+                            new int[]{2}
+                    );
+                    printDashedLine();
+                }
+
+                // =========================
+                // Printed info table (SMALLER)
+                // =========================
+                SunmiPrintHelper.getInstance().changeFontSize(18);
+
+                java.util.LinkedList<TableItem> printedHeader = new java.util.LinkedList<>();
+                printedHeader.add(new TableItem(
+                        new String[]{"التاريخ", "طبع بواسطة"},
+                        new int[]{3, 3},
+                        new int[]{1, 1}
+                ));
+                for (TableItem t : printedHeader) {
+                    SunmiPrintHelper.getInstance().printTable(t.getText(), t.getWidth(), t.getAlign());
+                }
+
+                SunmiPrintHelper.getInstance().changeFontSize(18);
+                SunmiPrintHelper.getInstance().changeFontBold();
+
+                java.util.LinkedList<TableItem> printedRow = new java.util.LinkedList<>();
+                printedRow.add(new TableItem(
+                        new String[]{printedAt, printedBy},
+                        new int[]{3, 3},
+                        new int[]{1, 1}
+                ));
+
+                for (TableItem t : printedRow) {
+                    SunmiPrintHelper.getInstance().printTable(t.getText(), t.getWidth(), t.getAlign());
+                }
+
+                SunmiPrintHelper.getInstance().cancelFontBold();
+
+                // back to normal
+                SunmiPrintHelper.getInstance().changeFontSize(24);
+
+                // =========================
+                // Footer
+                // =========================
+                SunmiPrintHelper.getInstance().setAlign(1);
+                SunmiPrintHelper.getInstance().printTable(
+                        new String[]{"نسخة مرخصة من هاي فايف"},
+                        new int[]{1},
+                        new int[]{1}
+                );
+
+                SunmiPrintHelper.getInstance().printTable(new String[]{""}, new int[]{1}, new int[]{0});
+                SunmiPrintHelper.getInstance().printTable(new String[]{""}, new int[]{1}, new int[]{0});
+                SunmiPrintHelper.getInstance().printTable(new String[]{""}, new int[]{1}, new int[]{0});
+
+                if (copy < no_of_copy - 1) {
+                    try { Thread.sleep(2500); } catch (InterruptedException ignored) {}
+                }
+            }
+
+        } catch (Exception e) {
+            errorLogger("printInvoice", e.getMessage() == null ? "null" : e.getMessage());
+        }
+    }
+    public void printDashedLine() {
+        // متقطعة (خفيفة) مثل الصورة
+        SunmiPrintHelper.getInstance().printTable(
+                new String[]{"- - - - - - - - - - - - - - - -"},
+                new int[]{1},
+                new int[]{1}
+        );
+    }
+
+    public void printLine() {
+        // متقطعة (خفيفة) مثل الصورة
+        SunmiPrintHelper.getInstance().printTable(
+                new String[]{"________________________________"},
+                new int[]{1},
+                new int[]{1}
+        );
+    }
+    public static double safeDouble(Double v) {
+        return v == null ? 0.0 : v;
+    }
+
+    public static String formatNumber(double v) {
+        // لو بدك بدون كسور دائماً: رجّع (long)
+        // حالياً: لو رقم صحيح يطلع بدون .0
+        if (Math.abs(v - Math.round(v)) < 0.000001) return String.valueOf((long) Math.round(v));
+        return String.valueOf(v);
+    }
+    public static String safeTrim(CharSequence cs) {
+        return cs == null ? "" : cs.toString().trim();
     }
 }
 

@@ -3,6 +3,8 @@ package co.highfive.petrolstation.customers.dto;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
+import co.highfive.petrolstation.models.Account;
+
 public class InvoiceDto {
     @SerializedName("id") public int id;
     @SerializedName("date") public String date;
@@ -21,12 +23,13 @@ public class InvoiceDto {
 
     @SerializedName("details") public List<InvoiceDetailDto> details;
 
-    // رح نخزنهم JSON في Room (لكن DTO لازم يفهمهم)
-    @SerializedName("account") public Object account;
+    // IMPORTANT: changed from Object -> InvoiceAccountDto
+    @SerializedName("account") public Account account;
+
     @SerializedName("pump") public Object pump;
     @SerializedName("customer_vehicle") public Object customer_vehicle;
     @SerializedName("campaign") public Object campaign;
 
-    @SerializedName("pay_amount")
-    public Double pay_amount;
+    @SerializedName("pay_amount") public Double pay_amount;
+    @SerializedName("remain") public Double remain;
 }
