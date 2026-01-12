@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="6dp"
+        android:layout_marginLeft="2dp"
+        android:layout_marginRight="2dp"
+        android:radius="14dp"
+        android:elevation="3dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="14dp"
+            android:layoutDirection="rtl">
+
+            <!-- يظهر فقط عند السلكت -->
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/ivSelected"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_alignParentLeft="true"
+                android:layout_marginLeft="8dp"
+                android:src="@drawable/ic_check"
+                android:visibility="gone"
+                android:contentDescription="@string/app_name" />
+
+            <LinearLayout
+                android:id="@+id/content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@id/ivSelected"
+                android:layout_marginLeft="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvLine1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/din_regular"
+                    android:textColor="#1F1F39"
+                    android:textSize="14sp"
+                    android:text="اسم المركبة: Toyota Corolla"/>
+
+                <TextView
+                    android:id="@+id/tvLine2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/din_regular"
+                    android:textColor="#1F1F39"
+                    android:textSize="13sp"
+                    android:text="اللون: أبيض"/>
+
+                <TextView
+                    android:id="@+id/tvLine3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/din_regular"
+                    android:textColor="#1F1F39"
+                    android:textSize="13sp"
+                    android:text="رقم المركبة: 123-456-78"/>
+            </LinearLayout>
+
+        </RelativeLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</layout>

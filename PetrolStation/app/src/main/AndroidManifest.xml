@@ -170,6 +170,10 @@
         <activity
             android:name=".activities.InvoiceDetailsActivity"
             android:exported="true" />
+
+        <activity
+            android:name=".activities.ActiveInvoicesActivity"
+            android:exported="true" />
     </application>
 
 </manifest>

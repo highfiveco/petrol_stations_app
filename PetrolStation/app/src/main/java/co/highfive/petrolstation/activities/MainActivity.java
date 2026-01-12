@@ -29,7 +29,6 @@ public class MainActivity extends BaseActivity {
 
     private ActivityMainBinding binding;
     private MainAdapter adapter;
-    private ApiClient apiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,31 +36,11 @@ public class MainActivity extends BaseActivity {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         setupUI(binding.getRoot());
 
-        initApiClient();
         initHeader();
         initRecycler();
         initRefresh();
     }
 
-    private void initApiClient() {
-        apiClient = new ApiClient(
-                getApplicationContext(),
-                getGson(),
-                new ApiClient.HeaderProvider() {
-                    @Override public String getToken() {
-                        return getSessionManager().getString(getSessionKeys().token);
-                    }
-                    @Override public String getLang() {
-                        String lang = getSessionManager().getString(getSessionKeys().language_code);
-                        return (lang == null || lang.trim().isEmpty()) ? "ar" : lang;
-                    }
-                    @Override public boolean isLoggedIn() {
-                        return getSessionManager().getBoolean(getSessionKeys().isLogin);
-                    }
-                },
-                () -> runOnUiThread(this::logout)
-        );
-    }
 
     private void initHeader() {
         User user = getGson().fromJson(

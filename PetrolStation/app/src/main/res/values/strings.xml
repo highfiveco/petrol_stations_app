@@ -338,5 +338,9 @@
     <string name="invoice_remaining_amount">المبلغ المتبقي</string>
     <string name="paid_amount">المبلغ المدفوع</string>
     <string name="customer_classify">تصنيف الزبون</string>
+    <string name="select_v">اختر المركبة</string>
+    <string name="select_vehicle">اختر المركبة</string>
+    <string name="select_campaign">اختر الحملة</string>
+    <string name="add_new_invoice">تأكيد اضافة فاتورة جديدة</string>
 
 </resources>

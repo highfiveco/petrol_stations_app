@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layoutDirection="rtl"
+        android:orientation="vertical"
+        android:background="#FFFFFF">
+
+        <!-- Header -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:background="@drawable/header_bg">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icBack"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_alignParentStart="true"
+                android:layout_marginStart="14dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_back_white" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="الفواتير النشطة"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="@font/din_medium"/>
+        </RelativeLayout>
+
+        <!-- Content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingTop="14dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:overScrollMode="never"
+                android:clipToPadding="false"
+                android:paddingBottom="16dp"/>
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/emptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="لا توجد فواتير محفوظة مؤقتًا"
+                android:gravity="center"
+                android:visibility="gone"
+                android:textColor="#7A7A7A"
+                android:textSize="14sp"
+                android:fontFamily="@font/din_regular"
+                android:paddingTop="24dp"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</layout>

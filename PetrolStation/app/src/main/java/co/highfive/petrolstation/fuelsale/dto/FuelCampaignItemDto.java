@@ -9,5 +9,5 @@ public class FuelCampaignItemDto {
     @SerializedName("item_id") public Integer item_id;
 
     // item object كامل
-    @SerializedName("item") public Object item;
+    @SerializedName("item") public FuelItemDto item;
 }

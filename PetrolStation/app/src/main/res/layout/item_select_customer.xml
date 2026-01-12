@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/root"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:foreground="?attr/selectableItemBackground"
+        android:layoutDirection="rtl"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp">
+
+            <!-- ✅ Selected check -->
+            <ImageView
+                android:id="@+id/ic_selected"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_check"
+                android:visibility="gone" />
+
+            <!-- Content -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@id/ic_selected"
+                android:layout_marginLeft="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="اسم الزبون"
+                    android:textColor="@color/black"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/din_medium"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:id="@+id/tv_campaign"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="الحملة"
+                    android:textColor="#666666"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:layout_marginTop="4dp" />
+
+                <TextView
+                    android:id="@+id/tv_remaining"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="المتبقي: 0"
+                    android:textColor="#5608F3"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:layout_marginTop="6dp" />
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
+    </androidx.cardview.widget.CardView>
+</layout>

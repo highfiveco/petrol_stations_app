@@ -23,5 +23,7 @@
     <color name="text2">#222222</color>
     <color name="red">#F44336</color>
     <color name="blue">#2196F3</color>
+    <color name="purple">#6C2CF2</color>
+    <color name="purple_light">#EDE7FF</color>
 
 </resources>
