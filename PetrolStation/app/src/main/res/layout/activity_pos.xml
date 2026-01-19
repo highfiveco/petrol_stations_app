@@ -1,6 +1,291 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layoutDirection="rtl"
+        android:background="@color/white">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="match_parent"
+                android:layout_height="130dp"
+                android:src="@drawable/header_bg"
+                android:scaleType="fitXY"/>
+
+            <RelativeLayout
+                android:id="@+id/icons_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="26dp"
+                android:layout_marginLeft="26dp"
+                android:layout_marginTop="26dp">
+
+                <!-- Name + Phone -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginTop="10dp"
+                    android:orientation="vertical">
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/din_regular"
+                        android:textSize="20sp"
+                        android:includeFontPadding="false"
+                        android:textColor="@color/white"
+                        android:text="بيع المحروقات"/>
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/phone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/din_regular"
+                        android:textSize="16sp"
+                        android:layout_marginTop="5dp"
+                        android:includeFontPadding="false"
+                        android:textColor="@color/white"
+                        android:text=""/>
+                </LinearLayout>
+
+                <!-- Icons -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentLeft="true">
+
+                    <ImageView
+                        android:id="@+id/ic_add_new_invoice"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginLeft="8dp"
+                        android:src="@drawable/ic_add_customer_white"/>
+
+                    <!-- Cart -->
+                    <FrameLayout
+                        android:id="@+id/ic_cart"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:src="@drawable/ic_cart"/>
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/badge_count"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="top|start"
+                            android:layout_marginStart="14dp"
+                            android:background="@drawable/bg_badge_red"
+                            android:text="4"
+                            android:textSize="10sp"
+                            android:textColor="@color/white"
+                            android:gravity="center"/>
+                    </FrameLayout>
+
+                    <!-- Home -->
+                    <RelativeLayout
+                        android:id="@+id/ic_home"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_home"/>
+                    </RelativeLayout>
+
+                    <!-- Back -->
+                    <RelativeLayout
+                        android:id="@+id/ic_back"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_back_white"/>
+                    </RelativeLayout>
+
+                </LinearLayout>
+            </RelativeLayout>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/nsMain"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@+id/action_layout"
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+                        android:orientation="horizontal" >
+
+                        <RelativeLayout
+                            android:id="@+id/select_customer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/edittext_gray_light_bg"
+                            android:layout_marginTop="10dp"
+                            android:layout_weight="1">
+
+                            <androidx.appcompat.widget.AppCompatTextView
+                                android:id="@+id/type_customer"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                android:padding="16dp"
+                                android:text="@string/select_customer"
+                                android:fontFamily="@font/din_regular"
+                                android:includeFontPadding="false"
+                                android:gravity="right"
+                                android:layout_marginLeft="16dp"
+                                android:layout_toRightOf="@+id/ic_type_customer"
+                                android:background="@null"/>
+
+                            <androidx.appcompat.widget.AppCompatImageView
+                                android:id="@+id/ic_type_customer"
+                                android:layout_width="8dp"
+                                android:layout_height="4dp"
+                                android:layout_alignParentLeft="true"
+                                android:layout_centerVertical="true"
+                                android:layout_marginLeft="16dp"
+                                android:src="@drawable/ic_down_arrow_blue"/>
+
+
+                        </RelativeLayout>
+
+                        <ImageView
+                            android:id="@+id/add_customer"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_gravity="center"
+                            android:layout_marginStart="8dp"
+                            android:src="@drawable/ic_add"/>
+                    </LinearLayout>
+
+                    <!-- البحث -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/edittext_gray_light_bg"
+                            android:layout_marginTop="8dp">
+
+                            <androidx.appcompat.widget.AppCompatEditText
+                                android:id="@+id/search"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="12dp"
+                                android:hint="@string/search"
+                                android:inputType="text"
+                                android:singleLine="true"
+                                android:imeOptions="actionDone"
+                                android:fontFamily="@font/din_regular"
+                                android:background="@null"
+                                android:gravity="right"
+                                android:layout_toEndOf="@+id/ic_search" />
+
+                            <androidx.appcompat.widget.AppCompatImageView
+                                android:id="@+id/ic_search"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_centerVertical="true"
+                                android:layout_marginLeft="16dp"
+                                android:src="@drawable/ic_search_black" />
+                        </RelativeLayout>
+                    </LinearLayout>
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="16dp"
+                        android:layout_marginLeft="16dp"
+                        android:textSize="16sp"
+                        android:textColor="#38385E"
+                        android:fontFamily="@font/din_regular"
+                        android:text="@string/categories"/>
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvCategories"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        android:padding="12dp"/>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvItems"
+                        android:layout_width="match_parent"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+
+                        android:layout_height="wrap_content"
+                        android:padding="12dp"/>
+
+
+                </LinearLayout>
+
+            </androidx.core.widget.NestedScrollView>
+
+            <!-- Actions -->
+            <LinearLayout
+                android:id="@+id/action_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:layout_alignParentBottom="true"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_next"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:elevation="0dp"
+                    android:stateListAnimator="@null"
+                    android:fontFamily="@font/din_regular"
+                    android:text="التالي"
+                    android:textColor="@color/white"
+                    android:background="@drawable/bg_button_purple"/>
+
+            </LinearLayout>
+
+
+        </RelativeLayout>
+
+
+    </LinearLayout>
+</layout>

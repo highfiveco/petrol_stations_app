@@ -144,25 +144,36 @@ public class FinanceActivity extends BaseActivity {
                     public void onSuccess(Object data, String msg, String rawJson) {
                         hideProgressHUD();
 
-                        // ✅ اغلاق الديالوج من داخل الـ Adapter؟ لا، خلّيه من dialog نفسه.
-                        // هنا فقط نحدّث الداتا ونحدّث UI بعد نجاح الريكوست
-
                         try {
-                            // update list model
-                            accounts.get(position).setName(newName);
-                            if(editNameDialog.isVisible()){
+                            String targetId = safe(account.getId());
+
+                            int index = -1;
+                            for (int i = 0; i < accounts.size(); i++) {
+                                Account a = accounts.get(i);
+                                if (a != null && safe(a.getId()).equals(targetId)) {
+                                    index = i;
+                                    break;
+                                }
+                            }
+
+                            if (index >= 0) {
+                                accounts.get(index).setAccount_name(newName);
+                                adapter.notifyItemChanged(index);
+                            } else {
+                                // احتياط: لو ما لقيناه (نادر) اعمل refresh
+                                adapter.notifyDataSetChanged();
+                            }
+
+                            if (editNameDialog != null && editNameDialog.isVisible()) {
                                 editNameDialog.dismiss();
                             }
-                            // update UI item
-                            adapter.notifyItemChanged(position);
-
-                            // optional: if you still want to update holder instantly
-                            if (onDoneUiUpdate != null) onDoneUiUpdate.run();
+                            adapter.updateNameById(safe(account.getId()), newName);
 
                         } catch (Exception ignored) {}
 
                         toast(msg == null || msg.trim().isEmpty() ? getString(R.string.done) : msg);
                     }
+
 
                     @Override
                     public void onError(ApiError error) {
@@ -208,8 +219,8 @@ public class FinanceActivity extends BaseActivity {
                 return;
             }
             try {
-                openAddFinanceAccountDialog(appData, (type_id, account_type_id, select_customer_id, select_user_id, account_name, currency_id, notes) ->
-                        addAccount(type_id, account_type_id, select_customer_id, select_user_id, account_name, currency_id, notes)
+                openAddFinanceAccountDialog(appData, (type_id, account_type_id, select_customer_id, select_user_id, account_name, currency_id, notes, mobile) ->
+                        addAccount(type_id, account_type_id, select_customer_id, select_user_id, account_name, currency_id, notes, mobile)
                 );
             } catch (Exception e) {
                 errorLogger("Exception", String.valueOf(e.getMessage()));
@@ -397,7 +408,8 @@ public class FinanceActivity extends BaseActivity {
                             String select_user_id,
                             String account_name,
                             String currency_id,
-                            String notes) {
+                            String notes,
+                            String mobile) {
 
         showProgressHUD();
 
@@ -411,7 +423,11 @@ public class FinanceActivity extends BaseActivity {
         if (select_user_id != null) params.put("user_id", select_user_id);
         if (select_customer_id != null) params.put("person_id", select_customer_id);
         if (notes != null && !notes.trim().isEmpty()) params.put("notes", notes.trim());
-
+        if ("2".equals(type_id)) {
+            if (mobile != null && !mobile.trim().isEmpty()) {
+                params.put("mobile", mobile.trim()); // ✅ اسم المتغير في الريكوست
+            }
+        }
         Type type = new TypeToken<BaseResponse<Object>>() {}.getType();
 
         apiClient.request(

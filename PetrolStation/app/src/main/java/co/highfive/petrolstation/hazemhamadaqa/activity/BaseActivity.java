@@ -93,6 +93,7 @@ import co.highfive.petrolstation.listener.UploadListener;
 import co.highfive.petrolstation.models.AppData;
 import co.highfive.petrolstation.models.Setting;
 import co.highfive.petrolstation.models.TableItem;
+import co.highfive.petrolstation.models.Transactions;
 import co.highfive.petrolstation.models.User;
 import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.utils.BluetoothUtil;
@@ -1714,5 +1715,129 @@ public class BaseActivity extends AppCompatActivity implements Constant {
     public static String safeTrim(CharSequence cs) {
         return cs == null ? "" : cs.toString().trim();
     }
+
+    public void printMove(Setting setting, Transactions move) {
+        try {
+            if (setting == null || move == null) return;
+
+            int no_of_copy = 1;
+            try {
+                if (setting.getNo_print_copies() != null) {
+                    no_of_copy = Integer.parseInt(setting.getNo_print_copies());
+                }
+            } catch (Exception ignored) {}
+
+            for (int i = 0; i < no_of_copy; i++) {
+
+                SunmiPrintHelper.getInstance().changeFontBold();
+
+                // اسم الشركة + اللوغو (مثل القديم)
+                try {
+                    String imgFlag = getSessionManager().getString(getSessionKeys().downloadImage);
+                    if (imgFlag != null) {
+                        java.io.File path = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES);
+                        java.io.File file = new java.io.File(path, "logo.png");
+                        if (file.exists()) {
+                            android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeFile(file.getAbsolutePath());
+                            SunmiPrintHelper.getInstance().setAlign(1);
+                            SunmiPrintHelper.getInstance().printBitmap(bitmap, safe(setting.getName()));
+                        } else {
+                            SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getName())}, new int[]{1}, new int[]{1});
+                        }
+                    } else {
+                        SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getName())}, new int[]{1}, new int[]{1});
+                    }
+                } catch (Exception e) {
+                    SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getName())}, new int[]{1}, new int[]{1});
+                }
+
+                SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getMobile())}, new int[]{1}, new int[]{1});
+                SunmiPrintHelper.getInstance().printTable(new String[]{"______________________________"}, new int[]{10}, new int[]{1});
+
+                // العنوان
+                String title = safe(move.getTitle());
+                SunmiPrintHelper.getInstance().printTable(
+                        new String[]{title.isEmpty() ? "سند قبض" : title},
+                        new int[]{1},
+                        new int[]{1}
+                );
+
+                // رقم السند
+                SunmiPrintHelper.getInstance().printTable(new String[]{safe(move.getSanad_no())}, new int[]{1}, new int[]{1});
+
+                SunmiPrintHelper.getInstance().cancelFontBold();
+
+                SunmiPrintHelper.getInstance().printTable(new String[]{""}, new int[]{1}, new int[]{0});
+
+                SunmiPrintHelper.getInstance().changeFontBold();
+
+                SunmiPrintHelper.getInstance().printTable(
+                        new String[]{"الاسم : " + safe(move.getAccount_name())},
+                        new int[]{1},
+                        new int[]{2}
+                );
+
+                SunmiPrintHelper.getInstance().printTable(
+                        new String[]{"المبلغ : " + safe(""+move.getAmount()) + " " + safe(move.getCurrency_name())},
+                        new int[]{1},
+                        new int[]{2}
+                );
+
+                SunmiPrintHelper.getInstance().cancelFontBold();
+
+                SunmiPrintHelper.getInstance().printTable(
+                        new String[]{"البيان : " + safe(move.getType_statement())},
+                        new int[]{1},
+                        new int[]{2}
+                );
+
+                if (setting.getSanad_msg() != null && !setting.getSanad_msg().trim().isEmpty()) {
+                    SunmiPrintHelper.getInstance().printTable(new String[]{setting.getSanad_msg()}, new int[]{1}, new int[]{1});
+                }
+
+                SunmiPrintHelper.getInstance().printTable(new String[]{"______________________________"}, new int[]{10}, new int[]{1});
+
+                // التاريخ + طبع بواسطة
+                java.util.LinkedList<co.highfive.petrolstation.models.TableItem> header = new java.util.LinkedList<>();
+                header.add(new co.highfive.petrolstation.models.TableItem(
+                        new String[]{"التاريخ", "طبع بواسطة"},
+                        new int[]{3, 3},
+                        new int[]{1, 1}
+                ));
+                for (co.highfive.petrolstation.models.TableItem t : header) {
+                    SunmiPrintHelper.getInstance().printTable(t.getText(), t.getWidth(), t.getAlign());
+                }
+
+                java.util.LinkedList<co.highfive.petrolstation.models.TableItem> row = new java.util.LinkedList<>();
+                row.add(new co.highfive.petrolstation.models.TableItem(
+                        new String[]{safe(move.getPrinted_at()), safe(move.getPrinted_by())},
+                        new int[]{3, 3},
+                        new int[]{1, 1}
+                ));
+
+                SunmiPrintHelper.getInstance().changeFontSize(22);
+                SunmiPrintHelper.getInstance().changeFontBold();
+                for (co.highfive.petrolstation.models.TableItem t : row) {
+                    SunmiPrintHelper.getInstance().printTable(t.getText(), t.getWidth(), t.getAlign());
+                }
+                SunmiPrintHelper.getInstance().cancelFontBold();
+                SunmiPrintHelper.getInstance().changeFontSize(24);
+
+                SunmiPrintHelper.getInstance().printTable(new String[]{"نسخة مرخصة من هاي فايف"}, new int[]{1}, new int[]{1});
+
+                SunmiPrintHelper.getInstance().printTable(new String[]{""}, new int[]{1}, new int[]{0});
+                SunmiPrintHelper.getInstance().printTable(new String[]{""}, new int[]{1}, new int[]{0});
+                SunmiPrintHelper.getInstance().printTable(new String[]{""}, new int[]{1}, new int[]{0});
+
+                if (i < no_of_copy - 1) {
+                    try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+                }
+            }
+
+        } catch (Exception e) {
+            errorLogger("printMove", e.getMessage() == null ? "null" : e.getMessage());
+        }
+    }
+
 }
 

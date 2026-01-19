@@ -28,7 +28,7 @@ public class PosItemsRepository {
         itemDao.clearForFilter(queryCategoryId, safeName);
 
         // خزّن items
-        itemDao.upsertAll(PosItemsMappers.toEntities(data.items, queryCategoryId, safeName));
+        itemDao.upsertAll(PosItemsMappers.toEntities(data.items.data, queryCategoryId, safeName));
 
         // خزّن setting + آخر فلتر
         PosItemsCacheEntity c = new PosItemsCacheEntity();

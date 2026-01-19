@@ -48,6 +48,8 @@
             android:layout_weight="1"
             android:background="@drawable/edittext_gray_light_bg"
             android:padding="12dp"
+            android:inputType="text"
+            android:imeOptions="actionDone"
             android:hint="اكتب اسم الزبون"
             android:fontFamily="@font/din_regular"
             android:includeFontPadding="false"/>

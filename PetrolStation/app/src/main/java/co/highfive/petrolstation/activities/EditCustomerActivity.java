@@ -199,9 +199,9 @@ public class EditCustomerActivity extends BaseActivity {
 
         Map<String, String> params = ApiClient.mapOf(
                 "name", safeTrim(binding.name.getText()),
-                "mobile", safeTrim(binding.phone.getText()),
-                "address", safeTrim(binding.address.getText()),
-                "aesseal_no_check", safeTrim(binding.originalNumber.getText())
+                "mobile", safeTrim(binding.phone.getText())
+//                "address", safeTrim(binding.address.getText()),
+//                "aesseal_no_check", safeTrim(binding.originalNumber.getText())
         );
 
         if (statusId != null && !statusId.trim().isEmpty()) {

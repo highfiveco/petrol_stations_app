@@ -66,6 +66,7 @@ public class MainActivity extends BaseActivity {
 
         AppData appData = getGson().fromJson(getSessionManager().getString(getSessionKeys().app_data), AppData.class);
 
+        errorLogger("appData",""+appData.toString());
 
         ArrayList<MainItemView> list = new ArrayList<>();
         if(appData.getCustomers() == 1){
@@ -139,6 +140,7 @@ public class MainActivity extends BaseActivity {
 
                         // مهم: خزّن data كـ app_data بصيغة JSON حتى يكمل الكود القديم
                         if (data != null) {
+                            errorLogger("data",""+data.toString());
                             String dataJson = getGson().toJson(data);
                             getSessionManager().setString(getSessionKeys().app_data, dataJson);
                         }

@@ -616,4 +616,77 @@ public class AppData {
     public void setView_customer_vehicles(int view_customer_vehicles) {
         this.view_customer_vehicles = view_customer_vehicles;
     }
+
+    @Override
+    public String toString() {
+        return "AppData{" +
+                "user_sanad=" + user_sanad +
+                ", user_company_code='" + user_company_code + '\'' +
+                ", financial=" + financial +
+                ", customers=" + customers +
+                ", fund_financial=" + fund_financial +
+                ", maintenances=" + maintenances +
+                ", readings=" + readings +
+                ", customers_separated=" + customers_separated +
+                ", add_new_month=" + add_new_month +
+                ", add_new_week=" + add_new_week +
+                ", weekly_calculation=" + weekly_calculation +
+                ", achievement=" + achievement +
+                ", sms=" + sms +
+                ", view_log=" + view_log +
+                ", view_financial_move=" + view_financial_move +
+                ", update_customers=" + update_customers +
+                ", add_customers=" + add_customers +
+                ", view_customer_vehicles=" + view_customer_vehicles +
+                ", view_reminders=" + view_reminders +
+                ", add_reminders=" + add_reminders +
+                ", delete_reminders=" + delete_reminders +
+                ", update_mobile=" + update_mobile +
+                ", show_json_app=" + show_json_app +
+                ", update_prev_reading=" + update_prev_reading +
+                ", update_current_reading=" + update_current_reading +
+                ", log_reading=" + log_reading +
+                ", month_week=" + month_week +
+                ", year_week=" + year_week +
+                ", add_maintenances=" + add_maintenances +
+                ", update_maintenances=" + update_maintenances +
+                ", default_type_income=" + default_type_income +
+                ", check_last_reading_sanad=" + check_last_reading_sanad +
+                ", has_move=" + has_move +
+                ", has_load=" + has_load +
+                ", has_discount=" + has_discount +
+                ", customer_invoices=" + customer_invoices +
+                ", customer_fuel_sales=" + customer_fuel_sales +
+                ", payment_type_default=" + payment_type_default +
+                ", view_statement=" + view_statement +
+                ", pos=" + pos +
+                ", fuel_sales=" + fuel_sales +
+                ", view_invoices=" + view_invoices +
+                ", view_date=" + view_date +
+                ", disabled_type_move=" + disabled_type_move +
+                ", about_app=" + about_app +
+                ", setting=" + setting +
+                ", status_fund=" + status_fund +
+                ", currency=" + currency +
+                ", fund_to=" + fund_to +
+                ", users=" + users +
+                ", type_loaded=" + type_loaded +
+                ", month_load=" + month_load +
+                ", type_income=" + type_income +
+                ", payment_type=" + payment_type +
+                ", bank=" + bank +
+                ", type=" + type +
+                ", account_type=" + account_type +
+                ", type_customer_pay=" + type_customer_pay +
+                ", accounting_type=" + accounting_type +
+                ", customer_status=" + customer_status +
+                ", subscription_type=" + subscription_type +
+                ", electrical_breakers=" + electrical_breakers +
+                ", tablon=" + tablon +
+                ", first_area=" + first_area +
+                ", type_maintenances=" + type_maintenances +
+                ", status_maintenances=" + status_maintenances +
+                ", orders=" + orders +
+                '}';
+    }
 }

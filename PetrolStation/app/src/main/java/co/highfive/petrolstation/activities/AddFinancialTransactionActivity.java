@@ -742,16 +742,16 @@ public class AddFinancialTransactionActivity extends BaseActivity {
         }
 
         try{
-//            if(account != null && account.getAccount_currency() != null){
-//                for (int i = 0; i < currencies.size() ; i++) {
-//                    if(currencies.get(i).getId().equals(account.getAccount_currency())){
-//                        currency.setText(currencies.get(i).getName());
-//                        currency_edit_txt.setText(currencies.get(i).getName());
-//                        currency_id = currencies.get(i).getId();
-//                        break;
-//                    }
-//                }
-//            }
+            if(account != null && account.getAccount_currency() != null){
+                for (int i = 0; i < currencies.size() ; i++) {
+                    if(currencies.get(i).getId().equals(account.getAccount_currency())){
+                        currency.setText(currencies.get(i).getName());
+                        currency_edit_txt.setText(currencies.get(i).getName());
+                        currency_id = currencies.get(i).getId();
+                        break;
+                    }
+                }
+            }
         }catch (Exception e){
         }
 
@@ -864,7 +864,7 @@ public class AddFinancialTransactionActivity extends BaseActivity {
                         finish();
 
                         // same behavior as old:
-//                        print(data.setting, data.move, data.reading);
+                        printMove(data.setting, data.move);
                     }
 
                     @Override
@@ -1037,7 +1037,5 @@ public class AddFinancialTransactionActivity extends BaseActivity {
 
     }
 
-    public void print(Setting setting, Transactions move, Reading reading){
 
-    }
 }

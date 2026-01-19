@@ -130,7 +130,8 @@ public class AddFinanceAccountDialog extends DialogFragment {
                             select_user_id,
                             safeTrim(binding.accountName.getText()),
                             currency_id,
-                            safeTrim(binding.notes.getText())
+                            safeTrim(binding.notes.getText()),
+                            safeTrim(binding.mobile.getText())
                     );
                 }
             } else {
@@ -181,9 +182,14 @@ public class AddFinanceAccountDialog extends DialogFragment {
             if (select_user_id == null) {
                 return getString(R.string.select_user);
             }
-        } else {
+        }
+
+        if (type_id.equals("2")) { // private
             if (safeTrim(binding.accountName.getText()).isEmpty()) {
                 return getString(R.string.enter_account_name);
+            }
+            if (safeTrim(binding.mobile.getText()).isEmpty()) {
+                return "أدخل رقم الجوال";
             }
         }
 
@@ -261,10 +267,14 @@ public class AddFinanceAccountDialog extends DialogFragment {
             binding.userContainer.setVisibility(View.GONE);
             binding.accountNameContainer.setVisibility(View.GONE);
 
-        } else if (typeId.equals("2")) { // private
+        } else if (typeId.equals("2")) { // private (خاص)
             binding.customerContainer.setVisibility(View.GONE);
             binding.userContainer.setVisibility(View.GONE);
             binding.accountNameContainer.setVisibility(View.VISIBLE);
+
+            // ✅ mobile يظهر فقط هنا
+            binding.mobileLabel.setVisibility(View.VISIBLE);
+            binding.mobile.setVisibility(View.VISIBLE);
 
         } else if (typeId.equals("3")) { // user
             binding.accountNameContainer.setVisibility(View.GONE);
@@ -275,6 +285,15 @@ public class AddFinanceAccountDialog extends DialogFragment {
             binding.customerContainer.setVisibility(View.GONE);
             binding.userContainer.setVisibility(View.GONE);
             binding.accountNameContainer.setVisibility(View.VISIBLE);
+
+            // الافتراضي: نخفيه إلا لو بدك غير هيك
+            binding.mobileLabel.setVisibility(View.GONE);
+            binding.mobile.setVisibility(View.GONE);
+        }
+
+        // ✅ تنظيف حقل الجوال عند تغيير النوع
+        if (!"2".equals(typeId)) {
+            binding.mobile.setText("");
         }
     }
 

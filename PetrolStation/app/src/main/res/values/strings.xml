@@ -342,5 +342,7 @@
     <string name="select_vehicle">اختر المركبة</string>
     <string name="select_campaign">اختر الحملة</string>
     <string name="add_new_invoice">تأكيد اضافة فاتورة جديدة</string>
+    <string name="categories">التصنيفات</string>
+    <string name="all">الكل</string>
 
 </resources>

@@ -85,11 +85,20 @@ public class FuelSaleActivity extends BaseActivity {
     public Integer customerId; // NEW
     private Integer activeDraftLocalId = null; // NEW
 
+    private boolean isUpdatingCalc = false;
+
+    private enum LastEditSource { NONE, QTY, TOTAL }
+    private LastEditSource lastEditSource = LastEditSource.NONE;
+    private double selectedUnitPrice = 0;
+    private android.app.AlertDialog successDialog;
+
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         binding = ActivityFuelSaleBinding.inflate(getLayoutInflater());
+
         setContentView(binding.getRoot());
         paymentContainer = binding.paymentContainer;
 
@@ -99,11 +108,122 @@ public class FuelSaleActivity extends BaseActivity {
         initActions();
 
         loadFuelSaleSettings();
+        attachCalcWatchers();
+        attachSelectAllOnFocus();
     }
     private int getDraftCount() {
         ArrayList<co.highfive.petrolstation.fuelsale.dto.FuelSaleDraft> list = readDraftsFromSession();
         return list != null ? list.size() : 0;
     }
+
+    private void attachSelectAllOnFocus() {
+
+        View.OnFocusChangeListener focusListener = (v, hasFocus) -> {
+            if (!hasFocus) return;
+
+            if (v instanceof EditText) {
+                EditText et = (EditText) v;
+                if (et.getText() != null && et.getText().length() > 0) {
+                    et.post(et::selectAll); // مهم post عشان ينجح بعد فتح الكيبورد
+                }
+            }
+        };
+
+        View.OnClickListener clickListener = v -> {
+            if (v instanceof EditText) {
+                EditText et = (EditText) v;
+                if (et.getText() != null && et.getText().length() > 0) {
+                    et.post(et::selectAll);
+                }
+            }
+        };
+
+        // Qty
+        binding.etQuantity.setOnFocusChangeListener(focusListener);
+        binding.etQuantity.setOnClickListener(clickListener);
+
+        // Total (Amount)
+        binding.etAmount.setOnFocusChangeListener(focusListener);
+        binding.etAmount.setOnClickListener(clickListener);
+    }
+
+
+    private void attachCalcWatchers() {
+
+        // Qty watcher -> update total
+        binding.etQuantity.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                if (isUpdatingCalc) return;
+                lastEditSource = LastEditSource.QTY;
+                recalcTotalFromQty();
+            }
+        });
+
+        // Total watcher (etAmount) -> update qty
+        binding.etAmount.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                if (isUpdatingCalc) return;
+                lastEditSource = LastEditSource.TOTAL;
+                recalcQtyFromTotal();
+            }
+        });
+    }
+
+    private void recalcTotalFromQty() {
+        if (selectedUnitPrice <= 0) return;
+
+        double qty = parseDoubleSafe(binding.etQuantity.getText());
+        if (qty < 0) qty = 0;
+
+        double total = selectedUnitPrice * qty;
+
+        isUpdatingCalc = true;
+        setEditTextDouble(binding.etAmount, total);
+        isUpdatingCalc = false;
+    }
+
+    private void recalcQtyFromTotal() {
+        if (selectedUnitPrice <= 0) return;
+
+        double total = parseDoubleSafe(binding.etAmount.getText());
+        if (total < 0) total = 0;
+
+        double qty = total / selectedUnitPrice;
+
+        isUpdatingCalc = true;
+        setEditTextDouble(binding.etQuantity, qty);
+        isUpdatingCalc = false;
+    }
+
+
+    private void setEditTextDouble(EditText et, double v) {
+        if (et == null) return;
+
+        // صيغة نظيفة: إذا رقم صحيح لا تعرض .0
+        String text;
+        if (v == (long) v) text = String.valueOf((long) v);
+        else text = String.valueOf(round2(v)); // خيار: خليها 2 decimal
+
+        // لتقليل إعادة إطلاق watcher بسبب نفس النص
+        String current = et.getText() != null ? et.getText().toString() : "";
+        if (!current.equals(text)) {
+            et.setText(text);
+            et.setSelection(text.length());
+        }
+    }
+
+    private double round2(double v) {
+        return Math.round(v * 100.0) / 100.0;
+    }
+
 
     private void updateDraftBadge() {
         int count = getDraftCount();
@@ -145,12 +265,32 @@ public class FuelSaleActivity extends BaseActivity {
         itemsAdapter = new FuelItemsAdapter(items, item -> {
             selectedItem = item;
 
-            if (item.price != null) {
-                binding.etAmount.setText(String.valueOf(item.price));
+            // خزّن سعر الوحدة
+            selectedUnitPrice = item != null && item.price != null ? item.price : 0;
+
+            if (selectedUnitPrice <= 0) {
+                toast("هذا الصنف بدون سعر");
+                return;
             }
+
+            isUpdatingCalc = true;
+
+            // default qty = 1 إذا فاضي أو 0
+            double qty = parseDoubleSafe(binding.etQuantity.getText());
+            if (qty <= 0) {
+                binding.etQuantity.setText("1");
+                qty = 1;
+            }
+
+            // الإجمالي = سعر الوحدة * الكمية
+            double total = selectedUnitPrice * qty;
+            setEditTextDouble(binding.etAmount, total);
+
+            isUpdatingCalc = false;
 
             filterCampaignsByItem(item.id);
         });
+
 
         binding.rvItems.setAdapter(itemsAdapter);
 
@@ -183,7 +323,7 @@ public class FuelSaleActivity extends BaseActivity {
             activeDraftLocalId = null;
             finish();
         });
-        binding.btnCancel.setOnClickListener(v -> finish());
+
 
     }
 
@@ -236,14 +376,10 @@ public class FuelSaleActivity extends BaseActivity {
                     @Override
                     public void onSuccess(Object data, String msg, String rawJson) {
                         hideProgressHUD();
-                        if (hasActiveDraftSelected()) {
-                            removeDraftById(activeDraftLocalId);
-                            activeDraftLocalId = null;
-                        }
 
-                        showSuccessDialogAndGoHome(
-                                (msg != null && !msg.trim().isEmpty()) ? msg : "تمت عملية الحفظ بنجاح"
-                        );
+
+                        showSuccessDialog(msg);
+
                     }
 
                     @Override
@@ -289,7 +425,9 @@ public class FuelSaleActivity extends BaseActivity {
         // (Optional) account_id إذا عندكم مستخدم
         if (r.accountId != null) p.add("account_id", r.accountId);
 
-        if (r.customerVehicleId != null) p.add("customer_vehicle_id", r.customerVehicleId);
+        if (r.customerVehicleId != null && r.customerVehicleId > 0) {
+            p.add("customer_vehicle_id", r.customerVehicleId);
+        }
         if (r.pumpId != null)            p.add("pump_id", r.pumpId);
         if (r.campaignId != null)        p.add("campaign_id", r.campaignId);
 
@@ -355,6 +493,7 @@ public class FuelSaleActivity extends BaseActivity {
         r.itemIds = new ArrayList<>();
         r.prices  = new ArrayList<>();
         r.counts  = new ArrayList<>();
+        r.customerId = (selectedCustomer != null && selectedCustomer.id > 0) ? selectedCustomer.id : null;
 
         if (selectedItem != null && selectedItem.id > 0) {
             r.itemIds.add(selectedItem.id);
@@ -362,20 +501,26 @@ public class FuelSaleActivity extends BaseActivity {
             r.itemIds.add(0);
         }
 
-        double price = parseDoubleSafe(binding.etAmount.getText());
-        r.prices.add(price);
+        double total = parseDoubleSafe(binding.etAmount.getText());
+        double qty = parseDoubleSafe(binding.etQuantity.getText());
+        if (qty <= 0) qty = 1;
+
+        double unitPrice = (selectedUnitPrice > 0) ? selectedUnitPrice : (total / qty);
+
+        r.prices.add(unitPrice);
+        r.counts.add(qty);
 
         // عدّل حسب حقل الكمية عندك
-        double count = 1;
-        try { count = parseDoubleSafe(binding.etQuantity.getText()); } catch (Exception ignored) {}
-        r.counts.add(count);
+//        double count = 1;
+//        try { count = parseDoubleSafe(binding.etQuantity.getText()); } catch (Exception ignored) {}
+//        r.counts.add(count);
 
         // account_id
         // إذا عندك selectedCustomer.account_id استخدمه
         r.accountId = selectedCustomer != null ? selectedCustomer.account_id : null;
 
         // customer_vehicle_id
-        r.customerVehicleId = selectedVehicle != null ? selectedVehicle.id : null;
+        r.customerVehicleId = (selectedVehicle != null && selectedVehicle.id > 0) ? selectedVehicle.id : null;
 
         // pump_id
         r.pumpId = selectedPump != null ? selectedPump.id : null;
@@ -465,6 +610,7 @@ public class FuelSaleActivity extends BaseActivity {
 
         draft.customer_name = selectedCustomer != null && selectedCustomer.name != null
                 ? selectedCustomer.name : "";
+        draft.customer_id = (selectedCustomer != null && selectedCustomer.id > 0) ? selectedCustomer.id : 0;
 
         draft.vehicle_text = selectedVehicle != null ? buildVehicleDisplayText(selectedVehicle) : "";
 
@@ -700,7 +846,23 @@ public class FuelSaleActivity extends BaseActivity {
             addPaymentRow();
         }
 
+        selectedCustomer = null;
+
+        if (draft.customer_id > 0) {
+            FuelCustomerDto c = new FuelCustomerDto();
+            c.id = draft.customer_id;
+            c.name = draft.customer_name;
+            c.account_id = r.accountId; // إذا موجود
+            selectedCustomer = c;
+
+            binding.typeCustomer.setText(c.name != null ? c.name : "");
+        } else {
+            binding.typeCustomer.setText(getString(R.string.select_customer));
+        }
+
         toast("تم تحميل الفاتورة المؤقتة #" + localId);
+
+
     }
     @Nullable
     private FuelItemDto findItemById(int id) {
@@ -771,6 +933,10 @@ public class FuelSaleActivity extends BaseActivity {
     }
 
     private void resetForNewInvoice() {
+
+        selectedUnitPrice = 0;
+        isUpdatingCalc = false;
+        lastEditSource = LastEditSource.NONE;
 
         activeDraftLocalId = null;
 
@@ -1087,7 +1253,8 @@ public class FuelSaleActivity extends BaseActivity {
 
         java.util.Map<String, String> params = ApiClient.mapOf(
                 "name", name,
-                "mobile", mobile
+                "mobile", mobile,
+                "status",1
         );
 
         // إذا الـ API عندكم يتوقع حقول إضافية، ضيفها هنا حسب الحاجة:
@@ -1182,6 +1349,26 @@ public class FuelSaleActivity extends BaseActivity {
 
 
     private void openSelectCustomerDialog() {
+
+        // ✅ إذا في زبون محدد، حطه في النتائج الافتراضية
+        ArrayList<FuelCustomerDto> results = lastCustomerResults != null ? lastCustomerResults : new ArrayList<>();
+
+        if (selectedCustomer != null && selectedCustomer.id > 0) {
+            boolean exists = false;
+            for (FuelCustomerDto c : results) {
+                if (c != null && c.id == selectedCustomer.id) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                results = new ArrayList<>(results);
+                results.add(0, selectedCustomer);
+            }
+            lastCustomerSearch = selectedCustomer.name != null ? selectedCustomer.name : lastCustomerSearch;
+            lastCustomerResults = results;
+        }
+
         SelectCustomerDialog d = SelectCustomerDialog.newInstance(
                 lastCustomerSearch,
                 lastCustomerResults,
@@ -1191,17 +1378,14 @@ public class FuelSaleActivity extends BaseActivity {
         d.setCancelable(false);
 
         d.setListener(customer -> {
-
-            // ✅ هذا أهم سطر: يعيد ضبط المركبات + يحدّث UI
             applySelectedCustomer(customer);
-
-            // cache dialog state
             lastCustomerSearch = d.getLastSearch();
             lastCustomerResults = d.getLastResults();
         });
 
         d.show(getSupportFragmentManager(), "SelectCustomerDialog");
     }
+
 
     /* ================= API ================= */
 
@@ -1404,6 +1588,49 @@ public class FuelSaleActivity extends BaseActivity {
             binding.campaignContainer.setVisibility(View.VISIBLE);
         }
     }
+
+    private void showSuccessDialog(String apiMessage) {
+
+        if (isFinishing()) return;
+        if (successDialog != null && successDialog.isShowing()) return;
+
+        View v = LayoutInflater.from(this).inflate(R.layout.dialog_success, null, false);
+
+        android.widget.TextView txtMessage = v.findViewById(R.id.txtMessage);
+        android.widget.TextView btnOk = v.findViewById(R.id.btnOk);
+
+        String msg = (apiMessage != null && !apiMessage.trim().isEmpty())
+                ? apiMessage
+                : getString(R.string.done);
+
+        txtMessage.setText(msg);
+
+        android.app.AlertDialog.Builder b = new android.app.AlertDialog.Builder(this);
+        b.setView(v);
+        b.setCancelable(false);
+
+        successDialog = b.create();
+        if (successDialog.getWindow() != null) {
+            successDialog.getWindow().setBackgroundDrawable(
+                    new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
+            );
+        }
+        successDialog.show();
+
+        btnOk.setOnClickListener(view -> {
+            try { if (successDialog != null) successDialog.dismiss(); } catch (Exception ignored) {}
+
+            // ✅ لو كانت فاتورة من المسودات، احذفها بعد الحفظ
+            if (hasActiveDraftSelected()) {
+                try { removeDraftById(activeDraftLocalId); } catch (Exception ignored) {}
+                activeDraftLocalId = null;
+            }
+
+            // ✅ فرّغ كل شيء وخلي المستخدم يكمل بنفس الصفحة
+            resetForNewInvoice();
+        });
+    }
+
 
 
 }

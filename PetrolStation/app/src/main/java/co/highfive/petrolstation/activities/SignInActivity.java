@@ -10,6 +10,8 @@ import androidx.appcompat.widget.AppCompatTextView;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
+import java.util.Calendar;
+
 import co.highfive.petrolstation.R;
 import co.highfive.petrolstation.auth.AuthService;
 import co.highfive.petrolstation.auth.dto.LoginData;
@@ -29,6 +31,9 @@ public class SignInActivity extends BaseActivity {
 
     private ApiClient apiClient;
     private AuthService authService;
+    AppCompatTextView year;
+    Calendar calendar;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +45,10 @@ public class SignInActivity extends BaseActivity {
         etCompanyCode = findViewById(R.id.company_code);
         icShowPassword = findViewById(R.id.ic_show_password);
         btnSignIn = findViewById(R.id.sign_in);
+        year = findViewById(R.id.year);
+
+        calendar = Calendar.getInstance();
+        year.setText(""+calendar.get(Calendar.YEAR));
 
         initApiClient();
         authService = new AuthService(apiClient);

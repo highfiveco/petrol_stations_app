@@ -11,6 +11,7 @@ public class FuelPriceAddRequest {
     public Integer customerVehicleId;
     public Integer pumpId;
     public Integer campaignId;
+    public Integer customerId;
 
     public List<PaymentMethodDto> paymentMethods; // JSON string
     public String notes;

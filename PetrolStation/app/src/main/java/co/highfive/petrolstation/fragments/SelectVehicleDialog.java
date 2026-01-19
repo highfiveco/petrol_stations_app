@@ -123,7 +123,9 @@ public class SelectVehicleDialog extends DialogFragment {
     }
 
     private void fetchVehicles() {
+
         if (baseActivity == null) return;
+        baseActivity.showProgressHUD();
 
         if (customerId <= 0) {
             toastLocal(getString(R.string.general_error));
@@ -134,11 +136,11 @@ public class SelectVehicleDialog extends DialogFragment {
 
         Type type = new TypeToken<BaseResponse<FuelCustomerVehiclesResponseDto>>() {}.getType();
 
-        ApiClient.ApiParams params = new ApiClient.ApiParams().add("id", String.valueOf(customerId));
+        ApiClient.ApiParams params = new ApiClient.ApiParams().add("customer_id", String.valueOf(customerId));
 
         baseActivity.apiClient.request(
                 Constant.REQUEST_GET,
-                Endpoints.FUEL_PRICE_GET_CUSTOMER_VEHICLES, // لازم يكون هذا معرف عندك
+                Endpoints.CUSTOMER_VEHICLES, // لازم يكون هذا معرف عندك
                 params,
                 null,
                 type,

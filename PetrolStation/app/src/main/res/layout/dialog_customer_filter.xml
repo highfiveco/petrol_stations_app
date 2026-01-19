@@ -54,6 +54,8 @@
                 android:includeFontPadding="false"
                 android:layout_marginLeft="16dp"
                 android:layout_marginRight="16dp"
+                android:inputType="text"
+                android:imeOptions="actionDone"
                 android:hint="@string/name"
                 android:background="@drawable/edittext_gray_light_bg"/>
 

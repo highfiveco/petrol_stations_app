@@ -48,6 +48,7 @@
                         android:id="@+id/add"
                         android:layout_width="30dp"
                         android:layout_height="30dp"
+                        android:layout_marginRight="16dp"
                         android:src="@drawable/ic_add_white"
                         android:visibility="gone" />
                 </LinearLayout>
@@ -124,6 +125,7 @@
                     android:padding="12dp"
                     android:hint="@string/customer_orphone"
                     android:inputType="text"
+                    android:imeOptions="actionDone"
                     android:singleLine="true"
                     android:fontFamily="@font/din_regular"
                     android:background="@null"

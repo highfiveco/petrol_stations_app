@@ -14,6 +14,9 @@ public class Account {
     @SerializedName("name_currency")
     private String name_currency;
 
+    @SerializedName("account_currency")
+    private String account_currency;
+
     @SerializedName("name")
     private String name;
 
@@ -83,5 +86,17 @@ public class Account {
 
     public void setCredit(Double credit) {
         this.credit = credit;
+    }
+
+    public String getAccount_currency() {
+        return account_currency;
+    }
+
+    public void setAccount_currency(String account_currency) {
+        this.account_currency = account_currency;
+    }
+
+    public void setAccount_name(String account_name) {
+        this.account_name = account_name;
     }
 }

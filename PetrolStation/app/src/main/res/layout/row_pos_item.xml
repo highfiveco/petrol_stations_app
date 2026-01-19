@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layoutDirection="rtl"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        app:cardUseCompatPadding="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <!-- ✅ هنا نحط السلكتور عشان selected يشتغل صح -->
+        <LinearLayout
+            android:id="@+id/rootContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:background="@drawable/bg_pos_item_selector">
+
+            <ImageView
+                android:id="@+id/imgIcon"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_marginBottom="16dp"
+                android:scaleType="centerInside"
+                android:visibility="visible" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/txtName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/din_regular"
+                android:textSize="16sp"
+                android:textColor="#3B3B5E"
+                android:includeFontPadding="false"
+                android:text="اسم الصنف" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/txtPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/din_regular"
+                    android:textSize="14sp"
+                    android:textColor="#6A6AA0"
+                    android:includeFontPadding="false"
+                    android:text="0" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/btnMinus"
+                        android:layout_width="34dp"
+                        android:layout_height="34dp"
+                        android:padding="6dp"
+                        android:src="@drawable/ic_minus_circle" />
+
+                    <androidx.appcompat.widget.AppCompatEditText
+                        android:id="@+id/txtQty"
+                        android:layout_width="32dp"
+                        android:layout_height="34dp"
+                        android:gravity="center"
+                        android:fontFamily="@font/din_regular"
+                        android:textSize="14sp"
+                        android:textColor="#3B3B5E"
+                        android:includeFontPadding="false"
+                        android:background="@null"
+                        android:padding="0dp"
+                        android:inputType="number"
+                        android:imeOptions="actionDone"
+                        android:singleLine="true"
+                        android:cursorVisible="false"
+                        android:focusable="false"
+                        android:focusableInTouchMode="false"
+                        android:clickable="true"
+                        android:text="0"/>
+
+                    <ImageView
+                        android:id="@+id/btnPlus"
+                        android:layout_width="34dp"
+                        android:layout_height="34dp"
+                        android:padding="6dp"
+                        android:src="@drawable/ic_plus_circle" />
+
+                </LinearLayout>
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+</layout>

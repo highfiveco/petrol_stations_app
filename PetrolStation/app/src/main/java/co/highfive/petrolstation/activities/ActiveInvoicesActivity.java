@@ -49,6 +49,13 @@ public class ActiveInvoicesActivity extends BaseActivity {
         loadDrafts();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadDrafts();
+    }
+
+
     private void loadDrafts() {
         drafts.clear();
         drafts.addAll(readDraftsFromSession());

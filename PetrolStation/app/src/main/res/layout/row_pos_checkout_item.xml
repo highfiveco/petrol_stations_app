@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootSwipe"
+    android:layout_width="match_parent"
+    android:layout_height="78dp"
+    android:layout_marginBottom="10dp">
+
+    <!-- Background (Delete) -->
+    <LinearLayout
+        android:id="@+id/bgDelete"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:padding="14dp"
+        android:background="#FFE8E8"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:src="@android:drawable/ic_menu_delete" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="حذف"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Foreground (Content) -->
+    <LinearLayout
+        android:id="@+id/fgContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/white"
+        android:padding="14dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/txtName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="بنزين 95"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/txtPrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="$10"
+                android:layout_marginTop="4dp"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/txtQty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="x1"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/txtLineTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="$10"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginStart="14dp" />
+
+    </LinearLayout>
+
+</FrameLayout>

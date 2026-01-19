@@ -262,7 +262,33 @@
                     android:includeFontPadding="false"
                     android:background="@drawable/edittext_gray_light_bg"/>
 
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/mobile_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="رقم الجوال"
+                    android:textSize="16sp"
+                    android:textColor="#1F1F39"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="@font/din_medium"/>
+
+                <androidx.appcompat.widget.AppCompatEditText
+                    android:id="@+id/mobile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:padding="20dp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:inputType="phone"
+                    android:imeOptions="actionDone"
+                    android:background="@drawable/edittext_gray_light_bg"/>
+
+
+
             </LinearLayout>
+
 
 
             <androidx.appcompat.widget.AppCompatTextView

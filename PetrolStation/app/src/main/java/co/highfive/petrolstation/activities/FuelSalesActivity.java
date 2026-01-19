@@ -430,12 +430,15 @@ public class FuelSalesActivity extends BaseActivity {
                             return;
                         }
 
-                        if(data.data.get(0).account.getBalance() != null){
-                            binding.amount.setText(""+data.data.get(0).account.getBalance());
-                        }else if(data.data.get(0).account.getCredit() != null && data.data.get(0).account.getDepit() != null){
-                            double balance  = data.data.get(0).account.getCredit() - data.data.get(0).account.getDepit();
-                            binding.amount.setText(""+balance);
+                        if(data.data.size() >0){
+                            if(data.data.get(0).account.getBalance() != null){
+                                binding.amount.setText(""+data.data.get(0).account.getBalance());
+                            }else if(data.data.get(0).account.getCredit() != null && data.data.get(0).account.getDepit() != null){
+                                double balance  = data.data.get(0).account.getCredit() - data.data.get(0).account.getDepit();
+                                binding.amount.setText(""+balance);
+                            }
                         }
+
                         List<FuelSaleDto> newItems = (data.data != null) ? data.data : new ArrayList<>();
 
                         if (newItems.isEmpty()) {

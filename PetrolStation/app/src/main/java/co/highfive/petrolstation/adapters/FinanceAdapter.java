@@ -147,4 +147,20 @@ public class FinanceAdapter extends RecyclerView.Adapter<FinanceAdapter.VH> {
     }
 
     private static String s(Object o) { return o == null ? "" : String.valueOf(o); }
+    public void updateNameById(String id, String newName) {
+        if (id == null) return;
+
+        for (int i = 0; i < items.size(); i++) {
+            Account a = items.get(i);
+            if (a != null && id.equals(a.getId())) {
+                a.setAccount_name(newName);
+                notifyItemChanged(i);
+                return;
+            }
+        }
+        notifyDataSetChanged();
+    }
+
+
+
 }

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="8dp"
+    android:layoutDirection="ltr"
+    android:paddingBottom="8dp">
+
+    <!-- Background (يظهر عند السوايب) -->
+    <LinearLayout
+        android:id="@+id/bgDelete"
+        android:layout_width="72dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:gravity="center"
+        android:background="#FCE8EC">
+
+        <ImageView
+            android:id="@+id/btnDelete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_delete_pink"
+            android:contentDescription="@null" />
+    </LinearLayout>
+
+    <!-- Foreground (المحتوى اللي بتحرّكه مع السوايب) -->
+    <LinearLayout
+        android:id="@+id/fgContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layoutDirection="rtl"
+        android:background="@android:color/white"
+        android:padding="14dp">
+
+        <!-- name + unit price -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/txtName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="بنزين 95"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#1F1F39" />
+
+            <TextView
+                android:id="@+id/txtUnitPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="$10"
+                android:textSize="14sp"
+                android:textColor="#6B6B6B" />
+        </LinearLayout>
+
+        <!-- qty controls + line total -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- + / qty / - -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/btnPlus"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_plus_circle"
+                    android:contentDescription="@null" />
+
+                <EditText
+                    android:id="@+id/etQty"
+                    android:layout_width="52dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_qty"
+                    android:gravity="center"
+                    android:inputType="number"
+                    android:text="1"
+                    android:textColor="#1F1F39"
+                    android:textSize="14sp"
+                    android:maxLines="1" />
+
+                <ImageView
+                    android:id="@+id/btnMinus"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_minus_circle"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/txtLineTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="$20"
+                android:textStyle="bold"
+                android:textSize="15sp"
+                android:textColor="#6A1B9A" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

@@ -1,6 +1,7 @@
 package co.highfive.petrolstation.activities;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -16,6 +17,7 @@ import co.highfive.petrolstation.R;
 import co.highfive.petrolstation.adapters.CustomerFinancialAccountAdapter;
 import co.highfive.petrolstation.customers.dto.CustomerFinancialAccountResponse;
 import co.highfive.petrolstation.databinding.ActivityCustomerFinancialAccountBinding;
+import co.highfive.petrolstation.financial.dto.PrintMoveResponse;
 import co.highfive.petrolstation.fragments.DeleteDialog;
 import co.highfive.petrolstation.hazemhamadaqa.activity.BaseActivity;
 import co.highfive.petrolstation.models.Account;
@@ -26,6 +28,7 @@ import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.network.ApiError;
 import co.highfive.petrolstation.network.BaseResponse;
 import co.highfive.petrolstation.network.Endpoints;
+import co.highfive.petrolstation.utils.SunmiPrintHelper;
 
 import com.google.gson.reflect.TypeToken;
 
@@ -273,9 +276,69 @@ public class CustomerFinancialAccountActivity extends BaseActivity {
 
 
     private void printMoveRequest(String moveId) {
-        // انت جاهز تحطه لاحقاً حسب endpoint تبع printMove عندك
-        toast(getString(R.string.general_error));
+        if (moveId == null || moveId.trim().isEmpty()) return;
+
+        showProgressHUD();
+
+        Map<String, String> params = ApiClient.mapOf(
+                "move_id", safe(moveId)
+        );
+
+        Type type = new TypeToken<BaseResponse<PrintMoveResponse>>() {}.getType();
+
+        apiClient.request(
+                co.highfive.petrolstation.hazemhamadaqa.Http.Constant.REQUEST_GET,
+                Endpoints.FINANCIAL_PRINT_MOVE, // لازم تضيفه بالـ Endpoints
+                params,
+                null,
+                type,
+                0,
+                new ApiCallback<PrintMoveResponse>() {
+                    @Override
+                    public void onSuccess(PrintMoveResponse data, String msg, String rawJson) {
+                        hideProgressHUD();
+
+                        if (data == null || data.setting == null || data.move == null) {
+                            toast(getString(R.string.general_error));
+                            return;
+                        }
+
+                        // ✅ اطبع
+                        printMove(data.setting, data.move);
+
+                        toast(msg != null && !msg.trim().isEmpty() ? msg : getString(R.string.done));
+                    }
+
+                    @Override
+                    public void onError(ApiError error) {
+                        hideProgressHUD();
+                        toast(error != null && error.message != null ? error.message : getString(R.string.general_error));
+                    }
+
+                    @Override
+                    public void onUnauthorized(String rawJson) {
+                        hideProgressHUD();
+                        logout();
+                    }
+
+                    @Override
+                    public void onNetworkError(String reason) {
+                        hideProgressHUD();
+                        toast(R.string.no_internet);
+                    }
+
+                    @Override
+                    public void onParseError(String rawJson, Exception e) {
+                        hideProgressHUD();
+                        errorLogger("printMoveParseError", e.getMessage() == null ? "null" : e.getMessage());
+                        toast(getString(R.string.general_error));
+                    }
+                }
+        );
     }
+
+
+
 
     private void financialDeleteMove(String moveId) {
         showProgressHUD();
