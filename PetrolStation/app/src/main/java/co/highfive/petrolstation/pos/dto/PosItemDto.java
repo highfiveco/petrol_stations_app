@@ -9,6 +9,9 @@ public class PosItemDto {
     @SerializedName("name")
     public String name;
 
+    @SerializedName("category")
+    public int category;
+
     @SerializedName("negative_check")
     public int negative_check;
 

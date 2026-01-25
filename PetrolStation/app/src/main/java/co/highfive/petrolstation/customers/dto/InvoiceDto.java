@@ -3,6 +3,8 @@ package co.highfive.petrolstation.customers.dto;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
+import co.highfive.petrolstation.fuelsale.dto.FuelCampaignDto;
+import co.highfive.petrolstation.fuelsale.dto.PumpDto;
 import co.highfive.petrolstation.models.Account;
 
 public class InvoiceDto {
@@ -26,10 +28,26 @@ public class InvoiceDto {
     // IMPORTANT: changed from Object -> InvoiceAccountDto
     @SerializedName("account") public Account account;
 
-    @SerializedName("pump") public Object pump;
-    @SerializedName("customer_vehicle") public Object customer_vehicle;
-    @SerializedName("campaign") public Object campaign;
+    @SerializedName("pump")
+    private PumpDto pump;
+
+    @SerializedName("campaign")
+    private FuelCampaignDto campaign;
+    @SerializedName("customer_vehicle")
+    private CustomerVehicleDto customerVehicle;
+
+
 
     @SerializedName("pay_amount") public Double pay_amount;
     @SerializedName("remain") public Double remain;
+
+    public PumpDto getPump() { return pump; }
+    public FuelCampaignDto getCampaign() { return campaign; }
+    public CustomerVehicleDto getCustomerVehicle() { return customerVehicle; }
+
+    public boolean is_offline = false; // NEW
+    public long local_id = 0;          // NEW (offline_invoices.localId)
+    public int sync_status = -1;       // NEW (0 pending, 1 sent, 2 failed)
+    public String sync_error = null;   // NEW
+
 }

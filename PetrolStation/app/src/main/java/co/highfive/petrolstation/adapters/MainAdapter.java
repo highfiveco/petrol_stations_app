@@ -17,11 +17,17 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.ViewHolder> {
     private List<MainItemView> list;
     private Context context;
     private BaseActivity baseActivity;
+    private MainActionListener listener;
 
-    public MainAdapter(List<MainItemView> list, Context context) {
+    public interface MainActionListener {
+        void onRefreshDataClicked();
+    }
+
+    public MainAdapter(List<MainItemView> list, Context context, MainActionListener listener) {
         this.list = list;
         this.context = context;
         this.baseActivity = (BaseActivity) context;
+        this.listener = listener;
     }
 
     public void updateData(List<MainItemView> newList) {
@@ -84,7 +90,7 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.ViewHolder> {
 //                    baseActivity.moveToActivity(baseActivity, CollectionActivity.class, null, false);
                     break;
                 case 13: // refresh data
-                    baseActivity.toast("Refreshing data...");
+                    if (listener != null) listener.onRefreshDataClicked();
                     break;
                 case 14: // sync data
                     baseActivity.moveToActivity(baseActivity, SyncOfflineDataActivity.class, null, false);

@@ -41,12 +41,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
+        android:id="@+id/scroll_view"
+        android:focusableInTouchMode="true"
         android:scrollbars="none"
         android:fitsSystemWindows="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:focusableInTouchMode="true"
+            android:id="@+id/mainLayout"
+            android:focusable="true"
+            android:clickable="true"
             android:orientation="vertical">
 
             <androidx.appcompat.widget.AppCompatTextView

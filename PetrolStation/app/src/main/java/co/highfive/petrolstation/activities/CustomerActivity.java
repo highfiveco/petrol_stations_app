@@ -245,6 +245,7 @@ public class CustomerActivity extends BaseActivity {
 
         binding.invoicesLayout.setOnClickListener(v -> {
             Bundle bundle = buildCustomerBundle();
+            bundle.putInt("invoice_type", 0); // 0 invoices
             moveToActivity(CustomerActivity.this, CustomerInvoicesActivity.class, bundle, false);
         });
 
@@ -255,6 +256,7 @@ public class CustomerActivity extends BaseActivity {
 
         binding.fuelSalesLayout.setOnClickListener(v -> {
             Bundle bundle = buildCustomerBundle();
+            bundle.putInt("invoice_type", 1); // 1 fuel_invoices
             moveToActivity(CustomerActivity.this, FuelSalesActivity.class, bundle, false);
         });
     }

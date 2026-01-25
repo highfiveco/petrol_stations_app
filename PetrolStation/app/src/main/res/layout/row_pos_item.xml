@@ -39,23 +39,24 @@
                 android:includeFontPadding="false"
                 android:text="اسم الصنف" />
 
-            <RelativeLayout
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/txtPrice"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/din_regular"
+                android:textSize="14sp"
+                android:layout_marginLeft="16dp"
+                android:textColor="#6A6AA0"
+                android:includeFontPadding="false"
+                android:text="0" />
 
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/txtPrice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:fontFamily="@font/din_regular"
-                    android:textSize="14sp"
-                    android:textColor="#6A6AA0"
-                    android:includeFontPadding="false"
-                    android:text="0" />
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" >
 
                 <LinearLayout
+                    android:id="@+id/button_action"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -64,9 +65,8 @@
 
                     <ImageView
                         android:id="@+id/btnMinus"
-                        android:layout_width="34dp"
-                        android:layout_height="34dp"
-                        android:padding="6dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:src="@drawable/ic_minus_circle" />
 
                     <androidx.appcompat.widget.AppCompatEditText
@@ -91,9 +91,8 @@
 
                     <ImageView
                         android:id="@+id/btnPlus"
-                        android:layout_width="34dp"
-                        android:layout_height="34dp"
-                        android:padding="6dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:src="@drawable/ic_plus_circle" />
 
                 </LinearLayout>

@@ -40,7 +40,7 @@ public class CustomersOfflineRepository {
         customerDao.clear();
         vehicleDao.clear();
         invoiceDetailDao.clear();
-        invoiceDao.clear();
+//        invoiceDao.clear();
     }
 
     /** تُستدعى لكل صفحة */

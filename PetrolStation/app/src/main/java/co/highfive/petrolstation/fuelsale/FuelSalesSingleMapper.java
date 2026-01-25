@@ -30,8 +30,8 @@ public class FuelSalesSingleMapper {
         e.customerVehicleId = inv.customer_vehicle_id;
 
         e.accountJson = inv.account != null ? gson.toJson(inv.account) : null;
-        e.pumpJson = inv.pump != null ? gson.toJson(inv.pump) : null;
-        e.customerVehicleJson = inv.customer_vehicle != null ? gson.toJson(inv.customer_vehicle) : null;
+//        e.pumpJson = inv.pump != null ? gson.toJson(inv.pump) : null;
+//        e.customerVehicleJson = inv.customer_vehicle != null ? gson.toJson(inv.customer_vehicle) : null;
 
         return e;
     }

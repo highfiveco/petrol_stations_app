@@ -10,6 +10,9 @@ plugins {
     id "org.jetbrains.kotlin.kapt"
 }
 
+kapt {
+    correctErrorTypes = true
+}
 android {
     namespace 'co.highfive.petrolstation'
     compileSdk { version = release(36) }
@@ -167,7 +170,7 @@ dependencies {
     kapt libs.epoxy.processor
 
     implementation libs.androidx.room.runtime
-    annotationProcessor libs.androidx.room.compiler
+    kapt libs.androidx.room.compiler
 
 //    implementation libs.sunmi.ui
     implementation libs.sunmi.printerlibrary

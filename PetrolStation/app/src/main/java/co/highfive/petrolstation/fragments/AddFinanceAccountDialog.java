@@ -109,8 +109,34 @@ public class AddFinanceAccountDialog extends DialogFragment {
             getDialog().getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
+        View root = binding.getRoot();
+
+        baseActivity.setupUIToHideKeyboard(root);
+
+        // ✅ خلي الفوكس افتراضيًا على mainLayout (مش على EditText)
+        binding.mainLayout.requestFocus();
+
+        baseActivity.hideKeyboardOnScrollUniversal(root, binding.scrollView);
+        binding.scrollView.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_MOVE
+                    || event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                if (baseActivity != null) {
+                    baseActivity.forceHideKeyboardAndClearFocus(binding.getRoot());
+                }
+            }
+            return false; // مهم: لا تمنع السكرول
+        });
+
         initClicks();
         initCustomerSearch();
+
+        if (getDialog() != null && getDialog().getWindow() != null) {
+            getDialog().getWindow().setSoftInputMode(
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+                            | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
+            );
+        }
+
 
         return binding.getRoot();
     }
@@ -140,11 +166,27 @@ public class AddFinanceAccountDialog extends DialogFragment {
                 }
             }
         });
+        binding.mainLayout.setOnClickListener(v ->
+                baseActivity.forceHideKeyboardAndClearFocus(binding.getRoot())
+        );
+        binding.typeLayout.setOnClickListener(v ->{
+            baseActivity.forceHideKeyboardAndClearFocus(binding.getRoot());
+            selectTypeLayout();
+        });
+        binding.accountTypeLayout.setOnClickListener(v -> {
+            baseActivity.forceHideKeyboardAndClearFocus(binding.getRoot());
+            selectAccountTypeLayout();
+        });
 
-        binding.typeLayout.setOnClickListener(v -> selectTypeLayout());
-        binding.accountTypeLayout.setOnClickListener(v -> selectAccountTypeLayout());
-        binding.selectUserLayout.setOnClickListener(v -> selectUserLayout());
-        binding.currencyLayout.setOnClickListener(v -> selectCurrencyLayout());
+        binding.selectUserLayout.setOnClickListener(v -> {
+            baseActivity.forceHideKeyboardAndClearFocus(binding.getRoot());
+            selectUserLayout();
+        });
+
+        binding.currencyLayout.setOnClickListener(v -> {
+            baseActivity.forceHideKeyboardAndClearFocus(binding.getRoot());
+            selectCurrencyLayout();
+        });
     }
 
     private void initCustomerSearch() {
@@ -214,6 +256,18 @@ public class AddFinanceAccountDialog extends DialogFragment {
         } catch (IllegalStateException e) {
             Log.e("ABSDIALOGFRAG", "Exception", e);
             FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        if (getDialog() != null && getDialog().getWindow() != null) {
+            getDialog().getWindow().setSoftInputMode(
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+                            | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
+            );
         }
     }
 

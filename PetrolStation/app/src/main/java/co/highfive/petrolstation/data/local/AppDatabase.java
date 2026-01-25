@@ -3,6 +3,8 @@ package co.highfive.petrolstation.data.local;
 import androidx.room.Database;
 import androidx.room.RoomDatabase;
 
+import co.highfive.petrolstation.data.local.dao.AccountDao;
+import co.highfive.petrolstation.data.local.dao.CampaignDao;
 import co.highfive.petrolstation.data.local.dao.CategoriesMetaDao;
 import co.highfive.petrolstation.data.local.dao.CategoryDao;
 import co.highfive.petrolstation.data.local.dao.CompanySettingCacheDao;
@@ -18,6 +20,10 @@ import co.highfive.petrolstation.data.local.dao.CustomerStatusDao;
 
 // Customer Vehicles
 import co.highfive.petrolstation.data.local.dao.CustomerVehicleDao;
+import co.highfive.petrolstation.data.local.dao.ItemsCacheDao;
+import co.highfive.petrolstation.data.local.dao.OfflineCustomerDao;
+import co.highfive.petrolstation.data.local.dao.OfflineInvoiceDao;
+import co.highfive.petrolstation.data.local.dao.PumpDao;
 import co.highfive.petrolstation.data.local.dao.VehicleColorDao;
 import co.highfive.petrolstation.data.local.dao.VehicleTypeDao;
 
@@ -40,7 +46,6 @@ import co.highfive.petrolstation.data.local.dao.PosPaymentTypeDao;
 import co.highfive.petrolstation.data.local.dao.PosSettingsCacheDao;
 
 import co.highfive.petrolstation.data.local.dao.PosItemDao;
-import co.highfive.petrolstation.data.local.dao.PosItemsCacheDao;
 
 import co.highfive.petrolstation.data.local.dao.PosInvoiceDao;
 import co.highfive.petrolstation.data.local.dao.PosInvoiceDetailDao;
@@ -62,6 +67,10 @@ import co.highfive.petrolstation.data.local.entities.CustomerStatusEntity;
 
 // Customer Vehicles entities
 import co.highfive.petrolstation.data.local.entities.CustomerVehicleEntity;
+import co.highfive.petrolstation.data.local.entities.ItemsCacheEntity;
+import co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity;
+import co.highfive.petrolstation.data.local.entities.OfflineInvoiceEntity;
+import co.highfive.petrolstation.data.local.entities.PosItemCacheEntity;
 import co.highfive.petrolstation.data.local.entities.VehicleColorEntity;
 import co.highfive.petrolstation.data.local.entities.VehicleTypeEntity;
 
@@ -84,15 +93,26 @@ import co.highfive.petrolstation.data.local.entities.PosPaymentTypeEntity;
 import co.highfive.petrolstation.data.local.entities.PosSettingsCacheEntity;
 
 import co.highfive.petrolstation.data.local.entities.PosItemEntity;
-import co.highfive.petrolstation.data.local.entities.PosItemsCacheEntity;
 
 import co.highfive.petrolstation.data.local.entities.PosInvoiceEntity;
 import co.highfive.petrolstation.data.local.entities.PosInvoiceDetailEntity;
 
 import co.highfive.petrolstation.data.local.entities.PosAddJsonSyncCacheEntity;
+import co.highfive.petrolstation.data.local.dao.InvoiceDao;
+import co.highfive.petrolstation.data.local.entities.InvoiceEntity;
+
+import co.highfive.petrolstation.data.local.dao.AccountDao;
+import co.highfive.petrolstation.data.local.dao.PumpDao;
+import co.highfive.petrolstation.data.local.dao.CampaignDao;
+
+import co.highfive.petrolstation.data.local.entities.AccountEntity;
+import co.highfive.petrolstation.data.local.entities.PumpEntity;
+import co.highfive.petrolstation.data.local.entities.CampaignEntity;
 
 @Database(
         entities = {
+                InvoiceEntity.class,
+                OfflineInvoiceEntity.class,
                 // =========================
                 // CompanySetting
                 // =========================
@@ -114,6 +134,7 @@ import co.highfive.petrolstation.data.local.entities.PosAddJsonSyncCacheEntity;
                 // customers
                 // =========================
                 CustomerEntity.class,
+                OfflineCustomerEntity.class,
                 CustomersMetaCacheEntity.class,
 
                 // =========================
@@ -158,7 +179,7 @@ import co.highfive.petrolstation.data.local.entities.PosAddJsonSyncCacheEntity;
                 // POS items
                 // =========================
                 PosItemEntity.class,
-                PosItemsCacheEntity.class,
+                ItemsCacheEntity.class,
 
                 // =========================
                 // POS add (invoice + details)
@@ -169,12 +190,17 @@ import co.highfive.petrolstation.data.local.entities.PosAddJsonSyncCacheEntity;
                 // =========================
                 // POS add-json sync cache
                 // =========================
-                PosAddJsonSyncCacheEntity.class
+                PosAddJsonSyncCacheEntity.class,
+                AccountEntity.class,
+                PumpEntity.class,
+                CampaignEntity.class,
+                PosItemCacheEntity.class
         },
-        version = 9,
+        version = 17,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
+
 
     // CompanySetting
     public abstract CompanySettingCacheDao companySettingCacheDao();
@@ -221,7 +247,6 @@ public abstract class AppDatabase extends RoomDatabase {
 
     // POS items
     public abstract PosItemDao posItemDao();
-    public abstract PosItemsCacheDao posItemsCacheDao();
 
     // POS add
     public abstract PosInvoiceDao posInvoiceDao();
@@ -229,4 +254,14 @@ public abstract class AppDatabase extends RoomDatabase {
 
     // POS add-json sync cache
     public abstract PosAddJsonSyncCacheDao posAddJsonSyncCacheDao();
+
+    public abstract InvoiceDao invoiceDao();
+    public abstract OfflineInvoiceDao offlineInvoiceDao();
+    public abstract AccountDao accountDao();
+    public abstract PumpDao pumpDao();
+    public abstract CampaignDao campaignDao();
+
+    public abstract ItemsCacheDao itemsCacheDao();
+    public abstract OfflineCustomerDao offlineCustomerDao();
+
 }

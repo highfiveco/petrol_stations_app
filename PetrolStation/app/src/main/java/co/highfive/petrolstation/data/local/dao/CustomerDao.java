@@ -43,4 +43,25 @@ public interface CustomerDao {
     )
     java.util.List<co.highfive.petrolstation.customers.local.CustomerSearchRow> searchByName(String q, int limit);
 
+    @Query("SELECT * FROM customers WHERE name LIKE :nameLike ORDER BY id DESC LIMIT :limit OFFSET :offset")
+    List<CustomerEntity> searchByNamePaged(String nameLike, int limit, int offset);
+
+    @Query("SELECT * FROM customers WHERE balance >= :minBalance ORDER BY id DESC LIMIT :limit OFFSET :offset")
+    List<CustomerEntity> searchByBalanceMinPaged(double minBalance, int limit, int offset);
+
+    @Query("SELECT * FROM customers WHERE name LIKE :nameLike AND balance >= :minBalance ORDER BY id DESC LIMIT :limit OFFSET :offset")
+    List<CustomerEntity> searchByNameAndBalanceMinPaged(String nameLike, double minBalance, int limit, int offset);
+
+    @androidx.room.Query("SELECT * FROM customers WHERE accountId = :accountId LIMIT 1")
+    co.highfive.petrolstation.data.local.entities.CustomerEntity getByAccountId(int accountId);
+
+    @Query("SELECT * FROM customers WHERE mobile = :mobile LIMIT 1")
+    CustomerEntity getByMobile(String mobile);
+
+    @Query("SELECT * FROM customers WHERE mobile = :mobile LIMIT 1")
+    CustomerEntity getByMobileExact(String mobile);
+
+    @Query("SELECT * FROM customers WHERE REPLACE(REPLACE(REPLACE(mobile,' ',''),'-',''),'+','') = :mobileNormalized LIMIT 1")
+    CustomerEntity getByMobileNormalizedLoose(String mobileNormalized);
+
 }

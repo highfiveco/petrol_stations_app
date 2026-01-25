@@ -19,6 +19,8 @@ public class CustomersMetaCacheEntity {
     public Integer deleteReminders;
     public Integer updateMobile;
     public Integer viewCustomerVehicles;
+    public Integer addCustomerVehicles;
+    public Integer editCustomerVehicles;
 
     public String settingJson; // نخزن SettingDto كـ JSON
     public long updatedAt;

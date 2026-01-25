@@ -13,6 +13,7 @@ public class CustomerDto {
     @SerializedName("mobile") public String mobile;
     @SerializedName("status") public Integer status;
 
+
     @SerializedName("customer_status") public String customer_status;
     @SerializedName("customer_classify_name") public String customer_classify_name;
     @SerializedName("type_customer_name") public String type_customer_name;

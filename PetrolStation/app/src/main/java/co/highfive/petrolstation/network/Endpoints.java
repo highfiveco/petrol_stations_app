@@ -42,6 +42,9 @@ public class Endpoints {
     public static final String CUSTOMERS_VIEWFINANCIALMOVE = "/api/customers/viewFinancialMove";
     public static final String GETCUSTOMERSSETTING = "/api/getCustomersSetting";
 
+    public static final String CUSTOMERS_OFFLINE = "/api/customers-offline";
+
+
     // Customer Vehicles
     public static final String CUSTOMER_VEHICLES = "/api/customer-vehicles";
     public static final String CUSTOMER_VEHICLES_ADD = "/api/customer-vehicles/add";

@@ -1,5 +1,6 @@
 package co.highfive.petrolstation.data.local.entities;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.Index;
 
@@ -8,7 +9,8 @@ import androidx.room.Index;
         primaryKeys = {"id", "queryCategoryId", "queryName"},
         indices = {
                 @Index("id"),
-                @Index("queryCategoryId")
+                @Index("queryCategoryId"),
+                @Index("queryName")
         }
 )
 public class PosItemEntity {
@@ -21,9 +23,11 @@ public class PosItemEntity {
     public String barcode;
     public String icon;
 
-    // من الريكوست (لتخزين النتائج حسب الفلتر)
-    public Integer queryCategoryId; // nullable
-    public String queryName;        // nullable أو "" للتوحيد
+    // IMPORTANT: must NOT be nullable because it's part of the primary key
+    public int queryCategoryId; // 0 means "no filter"
+
+    @NonNull
+    public String queryName = ""; // empty means "no name filter"
 
     public long updatedAt;
 }

@@ -31,6 +31,16 @@ import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.network.ApiError;
 import co.highfive.petrolstation.network.BaseResponse;
 import co.highfive.petrolstation.network.Endpoints;
+import android.os.Handler;
+import android.os.Looper;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import co.highfive.petrolstation.data.local.AppDatabase;
+import co.highfive.petrolstation.data.local.DatabaseProvider;
+import co.highfive.petrolstation.data.local.entities.CustomerVehicleEntity;
+
 
 public class SelectVehicleDialog extends DialogFragment {
 
@@ -49,6 +59,9 @@ public class SelectVehicleDialog extends DialogFragment {
     private ArrayList<CustomerVehicleDto> lastVehicles = new ArrayList<>();
 
     private SelectVehicleAdapter adapter;
+    private AppDatabase db;
+    private ExecutorService dbExecutor;
+    private Handler mainHandler;
 
     public SelectVehicleDialog() {}
 
@@ -70,7 +83,13 @@ public class SelectVehicleDialog extends DialogFragment {
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        if (context instanceof BaseActivity) baseActivity = (BaseActivity) context;
+        if (context instanceof BaseActivity) {
+            baseActivity = (BaseActivity) context;
+
+            db = DatabaseProvider.get(context);
+            dbExecutor = Executors.newSingleThreadExecutor();
+            mainHandler = new Handler(Looper.getMainLooper());
+        }
     }
 
     @Nullable
@@ -89,10 +108,11 @@ public class SelectVehicleDialog extends DialogFragment {
         initClicks();
 
         // لو في بيانات قديمة اعرضها فوراً، وبعدها اعمل refresh
+        // لو في بيانات قديمة اعرضها فوراً، وبعدها اعمل refresh
         renderVehicles(lastVehicles);
 
-        // دايمًا نعمل request عشان تكون آخر بيانات (تقدر تغيرها لاحقًا)
-        fetchVehicles();
+        // ✅ Online/Offline fetch
+        fetchVehiclesSmart();
 
         return binding.getRoot();
     }
@@ -105,6 +125,81 @@ public class SelectVehicleDialog extends DialogFragment {
 
         adapter.setSelectedId(selectedVehicleId);
     }
+
+    @NonNull
+    private ArrayList<CustomerVehicleDto> mapVehicleEntitiesToDto(@NonNull List<CustomerVehicleEntity> rows) {
+        ArrayList<CustomerVehicleDto> out = new ArrayList<>();
+        for (CustomerVehicleEntity e : rows) {
+            if (e == null) continue;
+
+            CustomerVehicleDto v = new CustomerVehicleDto();
+            v.id = e.id;
+            v.customer_id = e.customerId; // إذا dto عندك Integer/Int عدّل حسب نوعه
+            v.vehicle_number = e.vehicleNumber;
+            v.vehicle_type = e.vehicleType;
+            v.vehicle_color = e.vehicleColor;
+            v.model = e.model;
+            v.license_expiry_date = e.licenseExpiryDate;
+            v.notes = e.notes;
+            v.created_at = e.createdAt;
+            v.vehicle_type_name = e.vehicleTypeName;
+            v.vehicle_color_name = e.vehicleColorName;
+            v.account_id = e.accountId;
+            out.add(v);
+        }
+        return out;
+    }
+
+    private void fetchVehiclesOffline() {
+        if (db == null || dbExecutor == null || mainHandler == null) {
+            toastLocal(getString(R.string.general_error));
+            return;
+        }
+
+        if (customerId <= 0) {
+            toastLocal(getString(R.string.general_error));
+            return;
+        }
+
+        baseActivity.showProgressHUD();
+
+        dbExecutor.execute(() -> {
+            List<CustomerVehicleEntity> rows = new ArrayList<>();
+            try {
+                // ✅ لازم تكون موجودة في DAO
+                rows = db.customerVehicleDao().getByCustomerId(customerId);
+            } catch (Exception e) {
+                baseActivity.errorLogger("VehicleOffline", e.getMessage() == null ? "null" : e.getMessage());
+            }
+
+            ArrayList<CustomerVehicleDto> mapped = mapVehicleEntitiesToDto(rows);
+
+            mainHandler.post(() -> {
+                baseActivity.hideProgressHUD();
+
+                lastVehicles.clear();
+                lastVehicles.addAll(mapped);
+
+                renderVehicles(lastVehicles);
+
+                if (lastVehicles.isEmpty()) {
+                    toastLocal("لا توجد مركبات (Offline)");
+                }
+            });
+        });
+    }
+
+    private void fetchVehiclesSmart() {
+        if (baseActivity == null) return;
+
+        if (!baseActivity.connectionAvailable) {
+            fetchVehiclesOffline();
+            return;
+        }
+
+        fetchVehiclesOnline();
+    }
+
 
     private void initClicks() {
         binding.close.setOnClickListener(v -> dismissAllowingStateLoss());
@@ -122,7 +217,7 @@ public class SelectVehicleDialog extends DialogFragment {
         });
     }
 
-    private void fetchVehicles() {
+    private void fetchVehiclesOnline() {
 
         if (baseActivity == null) return;
         baseActivity.showProgressHUD();

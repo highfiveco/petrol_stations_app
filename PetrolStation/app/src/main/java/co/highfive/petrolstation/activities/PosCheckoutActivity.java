@@ -29,9 +29,13 @@ import java.util.List;
 
 import co.highfive.petrolstation.R;
 import co.highfive.petrolstation.customers_settings.dto.LookupDto;
+import co.highfive.petrolstation.data.local.AppDatabase;
+import co.highfive.petrolstation.data.local.DatabaseProvider;
+import co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity;
 import co.highfive.petrolstation.databinding.ActivityPosCheckoutBinding;
 import co.highfive.petrolstation.hazemhamadaqa.Http.Constant;
 import co.highfive.petrolstation.hazemhamadaqa.activity.BaseActivity;
+import co.highfive.petrolstation.models.Setting;
 import co.highfive.petrolstation.network.ApiCallback;
 import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.network.BaseResponse;
@@ -60,6 +64,10 @@ public class PosCheckoutActivity extends BaseActivity {
     public static final String EXTRA_CHECKOUT_DONE = "checkout_done";
     private int accountId = 0;
     private android.app.AlertDialog successDialog;
+
+    private int customerId = 0;
+    private String customerName = "";
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -160,9 +168,16 @@ public class PosCheckoutActivity extends BaseActivity {
         if (inv == null) { finish(); return; }
 
         binding.customerName.setText(inv.customerName != null ? inv.customerName : "");
-        binding.customerPhone.setText(""); // إذا عندك phone خزّنه بالـ DB لاحقاً
+        binding.customerPhone.setText(inv.customerMobile != null ? inv.customerMobile : "");
         this.accountId = inv.accountId;
-
+        if (this.accountId <= 0) {
+            this.accountId = getIntent().getIntExtra("account_id", 0);
+            if (this.accountId > 0) {
+                posDb.updateInvoiceAccountId(invoiceId, this.accountId); // ثبّتها
+            }
+        }
+        this.customerId = inv.customerId;           // ✅ لازم يكون موجود بجدول pos invoice
+        this.customerName = inv.customerName != null ? inv.customerName : "";
         // ✅ note
         binding.etNotes.setText(inv.note != null ? inv.note : "");
 
@@ -777,64 +792,151 @@ public class PosCheckoutActivity extends BaseActivity {
             return;
         }
 
-        // ✅ account_id: عندك خيارين:
-        // 1) لو عندك customer account id من POS (مستقبلاً)
-        // 2) مؤقتاً: خليه 0 أو اقرأه من intent لو جاي
-        int accountId = this.accountId;
-        if (accountId <= 0) {
-            toast("حدد الحساب (account) أولاً");
-            return;
-        }
+//        int accountId = this.accountId;
+//        if (accountId <= 0) {
+//            toast("حدد الحساب (account) أولاً");
+//            return;
+//        }
 
         String notes = binding.etNotes.getText() != null ? binding.etNotes.getText().toString().trim() : "";
+
+        // ✅✅✅ NEW: Offline => Save locally like FuelSale
+        if (!connectionAvailable) {
+            saveOfflinePosSale(accountId, notes, pms);
+            return;
+        }
 
         ApiClient.ApiParams params = buildPosAddParams(accountId, notes, pms);
 
         showProgressHUD();
 
-        Type type = new TypeToken<BaseResponse<Object>>(){}.getType();
+        Type type = new TypeToken<BaseResponse<co.highfive.petrolstation.customers.dto.InvoiceDto>>() {}.getType();
 
         apiClient.request(
                 Constant.REQUEST_POST,
-                Endpoints.POS_ADD, // لازم يكون /api/pos/add
+                Endpoints.POS_ADD,
                 params,
                 null,
                 type,
                 0,
-                new ApiCallback<Object>() {
-
+                new ApiCallback<co.highfive.petrolstation.customers.dto.InvoiceDto>() {
                     @Override
-                    public void onSuccess(Object data, String msg, String rawJson) {
+                    public void onSuccess(co.highfive.petrolstation.customers.dto.InvoiceDto data, String msg, String rawJson) {
                         hideProgressHUD();
+
                         showSuccessDialog(msg);
+
+                        Setting setting = null;
+                        if (getAppData() != null) setting = getAppData().getSetting();
+                        if (setting == null) {
+                            toast(getString(R.string.general_error));
+                            return;
+                        }
+                        printInvoice(setting, data);
                     }
 
-                    @Override
-                    public void onError(co.highfive.petrolstation.network.ApiError error) {
+                    @Override public void onError(co.highfive.petrolstation.network.ApiError error) {
                         hideProgressHUD();
                         toast(error != null ? error.message : getString(R.string.general_error));
                     }
-
-                    @Override
-                    public void onUnauthorized(String rawJson) {
-                        hideProgressHUD();
-                        logout();
-                    }
-
-                    @Override
-                    public void onNetworkError(String reason) {
-                        hideProgressHUD();
-                        toast(R.string.no_internet);
-                    }
-
-                    @Override
-                    public void onParseError(String rawJson, Exception e) {
-                        hideProgressHUD();
-                        toast(getString(R.string.general_error));
-                    }
+                    @Override public void onUnauthorized(String rawJson) { hideProgressHUD(); logout(); }
+                    @Override public void onNetworkError(String reason) { hideProgressHUD(); toast(R.string.no_internet); }
+                    @Override public void onParseError(String rawJson, Exception e) { hideProgressHUD(); toast(getString(R.string.general_error)); }
                 }
         );
     }
+
+    private void saveOfflinePosSale(int accountId,
+                                    @NonNull String notes,
+                                    @NonNull List<co.highfive.petrolstation.fuelsale.dto.PaymentMethodDto> pms) {
+
+        try {
+            if (invoiceId <= 0) {
+                toast("فاتورة غير صالحة");
+                return;
+            }
+
+            // احسب المجموع
+            double total = 0;
+            for (co.highfive.petrolstation.pos.dto.PosDraftItemDto it : cartItems) {
+                if (it == null) continue;
+                total += (it.price * it.qty);
+            }
+
+            // نص ثابت للنوع (زي statement بالمحروقات)
+            String statement = "فاتورة POS";
+            String invoiceNoPlaceholder = "POS-OFF-" + System.currentTimeMillis();
+
+            // ✅ جيب بيانات الفاتورة من DB (اسم الزبون.. الخ)
+            co.highfive.petrolstation.pos.dto.PosActiveInvoice inv = posDb.getInvoice(invoiceId);
+
+            String customerName = inv != null && inv.customerName != null ? inv.customerName : "";
+            int customerId = inv != null ? inv.customerId : 0;
+            String customerMobile = inv != null && inv.customerMobile != null ? inv.customerMobile : "";
+
+            // ✅ ابني Payload بسيط واضح
+            co.highfive.petrolstation.pos.dto.PosOfflineSaleRequest req =
+                    new co.highfive.petrolstation.pos.dto.PosOfflineSaleRequest();
+
+            req.accountId = accountId;
+            req.customerId = customerId;
+            req.offlineCustomerLocalId = (customerId < 0) ? Math.abs((long) customerId) : 0;
+            req.customerName = customerName;
+            req.notes = notes;
+            req.items = new ArrayList<>(cartItems);
+            req.paymentMethods = new ArrayList<>(pms);
+
+            // ✅ نفس الريبو اللي بالمحروقات
+            co.highfive.petrolstation.data.local.AppDatabase db =
+                    co.highfive.petrolstation.data.local.DatabaseProvider.get(this);
+
+            co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository repo =
+                    new co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository(
+                            this,
+                            db,
+                            getGson(),
+                            apiClient
+                    );
+
+            java.util.concurrent.ExecutorService ex = java.util.concurrent.Executors.newSingleThreadExecutor();
+            android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
+
+            showProgressHUD();
+
+            final Double  allTotal = total;
+            ex.execute(() -> {
+                try {
+                    repo.savePosSaleOffline(req, statement, allTotal, invoiceNoPlaceholder);
+
+                    // ✅ بعد ما خزّنا بالـ queue: احذف الفاتورة من active invoices
+                    try { posDb.deleteInvoice(invoiceId); } catch (Exception ignored) {}
+
+                    main.post(() -> {
+                        hideProgressHUD();
+                        toast("تم حفظ فاتورة الـ POS محليًا وسيتم إرسالها عند توفر الإنترنت");
+
+                        // ✅ رجّع ل PosActivity وكأنه Done (عشان يعمل reset ويحدث badge)
+                        Intent i = new Intent();
+                        i.putExtra("pos_invoice_id", invoiceId);
+                        i.putExtra(EXTRA_CHECKOUT_DONE, true);
+                        setResult(RESULT_OK, i);
+                        finish();
+                    });
+
+                } catch (Exception e) {
+                    main.post(() -> {
+                        hideProgressHUD();
+                        toast(getString(R.string.general_error));
+                    });
+                }
+            });
+
+        } catch (Exception e) {
+            toast(getString(R.string.general_error));
+        }
+    }
+
+
 
     @NonNull
     private ApiClient.ApiParams buildPosAddParams(int accountId,
@@ -861,7 +963,7 @@ public class PosCheckoutActivity extends BaseActivity {
 
         // ✅ account_id
         p.add("account_id", accountId);
-
+        p.add("customer_id", customerId);
         // ✅ notes
         p.add("notes", notes != null ? notes : "");
 
@@ -909,6 +1011,40 @@ public class PosCheckoutActivity extends BaseActivity {
             setResult(RESULT_OK, i);
             finish();
         });
+    }
+    private OfflineCustomerEntity ensureOfflineCustomer(@NonNull String name, @NonNull String mobile) {
+        AppDatabase db = DatabaseProvider.get(this);
+        String norm = normalizeMobile(mobile);
+
+        OfflineCustomerEntity existing = db.offlineCustomerDao().getByMobileNormalized(norm);
+        long now = System.currentTimeMillis();
+
+        if (existing != null) {
+            // optional: حدث الاسم إذا كان فاضي
+            if ((existing.name == null || existing.name.trim().isEmpty()) && name != null) {
+                existing.name = name.trim();
+                existing.updatedAtTs = now;
+                db.offlineCustomerDao().update(existing);
+            }
+            return existing;
+        }
+
+        OfflineCustomerEntity e = new OfflineCustomerEntity();
+        e.name = name != null ? name.trim() : "";
+        e.mobile = mobile != null ? mobile.trim() : "";
+        e.mobileNormalized = norm;
+        e.syncStatus = 0;
+        e.createdAtTs = now;
+        e.updatedAtTs = now;
+
+        long localId = db.offlineCustomerDao().insert(e);
+        e.localId = localId;
+        return e;
+    }
+
+    private String normalizeMobile(String m) {
+        if (m == null) return "";
+        return m.replace(" ", "").replace("-", "").trim();
     }
 
 }

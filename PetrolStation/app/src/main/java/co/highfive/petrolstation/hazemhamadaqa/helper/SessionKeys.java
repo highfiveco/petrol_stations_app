@@ -64,6 +64,11 @@ public class SessionKeys {
     public String weekly_reading_month_val;
     public String weekly_reading_year_val;
 
+    public String get_setting_json ;
+    public String company_setting_json ;
+    public String pos_settings_json ;
+    public String fuel_price_settings_json ;
+
     public SessionKeys(){
 
         isLogin = "isLogin";
@@ -122,6 +127,11 @@ public class SessionKeys {
         weekly_reading_counter ="weekly_reading_counter";
         weekly_reading_month_val ="weekly_reading_month_val";
         weekly_reading_year_val ="weekly_reading_year_val";
+
+         get_setting_json = "get_setting_json";
+         company_setting_json = "company_setting_json";
+         pos_settings_json = "pos_settings_json";
+         fuel_price_settings_json = "fuel_price_settings_json";
     }
 
 }

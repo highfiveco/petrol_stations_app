@@ -292,6 +292,7 @@
                         android:background="@drawable/edittext_gray_light_bg"
                         android:backgroundTint="@null"
                         android:padding="12dp"
+                        android:inputType="numberDecimal"
                         android:fontFamily="@font/din_regular"
 
                         android:hint="الكمية"/>
@@ -303,6 +304,7 @@
                         android:layout_weight="1"
                         android:backgroundTint="@null"
                         android:padding="12dp"
+                        android:inputType="numberDecimal"
                         android:fontFamily="@font/din_regular"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/edittext_gray_light_bg"

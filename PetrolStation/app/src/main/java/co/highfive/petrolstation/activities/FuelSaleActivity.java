@@ -1,6 +1,8 @@
 package co.highfive.petrolstation.activities;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -18,12 +20,18 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import co.highfive.petrolstation.R;
 import co.highfive.petrolstation.adapters.FuelItemsAdapter;
 import co.highfive.petrolstation.adapters.PumpsAdapter;
 import co.highfive.petrolstation.customers.dto.CustomerVehicleDto;
 import co.highfive.petrolstation.customers_settings.dto.LookupDto;
+import co.highfive.petrolstation.data.local.AppDatabase;
+import co.highfive.petrolstation.data.local.DatabaseProvider;
+import co.highfive.petrolstation.data.local.entities.CustomerVehicleEntity;
+import co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository;
 import co.highfive.petrolstation.databinding.ActivityFuelSaleBinding;
 import co.highfive.petrolstation.fragments.AddCustomerDialog;
 import co.highfive.petrolstation.fragments.AddVehicleDialog;
@@ -38,6 +46,7 @@ import co.highfive.petrolstation.fuelsale.dto.FuelPriceSettingsData;
 import co.highfive.petrolstation.fuelsale.dto.PumpDto;
 import co.highfive.petrolstation.hazemhamadaqa.Http.Constant;
 import co.highfive.petrolstation.hazemhamadaqa.activity.BaseActivity;
+import co.highfive.petrolstation.models.Setting;
 import co.highfive.petrolstation.network.ApiCallback;
 import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.network.BaseResponse;
@@ -92,7 +101,10 @@ public class FuelSaleActivity extends BaseActivity {
     private double selectedUnitPrice = 0;
     private android.app.AlertDialog successDialog;
 
+    private AppDatabase db;
 
+    private ExecutorService dbExecutor;
+    private Handler mainHandler;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,6 +112,10 @@ public class FuelSaleActivity extends BaseActivity {
         binding = ActivityFuelSaleBinding.inflate(getLayoutInflater());
 
         setContentView(binding.getRoot());
+        db = DatabaseProvider.get(this);
+        dbExecutor = Executors.newSingleThreadExecutor();
+        mainHandler = new Handler(Looper.getMainLooper());
+
         paymentContainer = binding.paymentContainer;
 
         setupUI(binding.getRoot());
@@ -107,10 +123,59 @@ public class FuelSaleActivity extends BaseActivity {
         initRecyclerViews();
         initActions();
 
-        loadFuelSaleSettings();
+        loadFuelSaleSettingsSmart();
         attachCalcWatchers();
         attachSelectAllOnFocus();
     }
+
+    private void loadFuelSaleSettingsSmart() {
+        if (connectionAvailable) {
+            loadFuelSaleSettings(); // online
+            return;
+        }
+
+        // offline -> load from session
+        FuelPriceSettingsData cached = getFuelSettingsFromSession();
+        if (cached == null) {
+            toast(getString(R.string.no_internet));
+            // خيار: Disable UI
+            return;
+        }
+
+        applyFuelSettingsToUI(cached);
+    }
+
+    private void applyFuelSettingsToUI(@NonNull FuelPriceSettingsData data) {
+
+        settingsData = data;
+
+        items.clear();
+        pumps.clear();
+        campaigns.clear();
+        paymentTypes.clear();
+
+        if (data.items != null) items.addAll(data.items);
+        if (data.pumps != null) pumps.addAll(data.pumps);
+        if (data.campaigns != null) campaigns.addAll(data.campaigns);
+        if (data.payment_type != null) paymentTypes.addAll(data.payment_type);
+
+        itemsAdapter.updateData(items);
+        pumpsAdapter.updateData(pumps);
+
+        hideCampaign();
+
+        paymentContainer.removeAllViews();
+        addPaymentRow();
+
+        if (pendingApplyDraftId != null) {
+            int id = pendingApplyDraftId;
+            pendingApplyDraftId = null;
+            applyDraftById(id);
+        }
+    }
+
+
+
     private int getDraftCount() {
         ArrayList<co.highfive.petrolstation.fuelsale.dto.FuelSaleDraft> list = readDraftsFromSession();
         return list != null ? list.size() : 0;
@@ -314,7 +379,13 @@ public class FuelSaleActivity extends BaseActivity {
         binding.selectVehicle.setOnClickListener(v -> openSelectVehicleDialog());
         binding.addVehicle.setOnClickListener(v -> openAddVehicleDialog());
         binding.campaignContainer.setOnClickListener(v -> openSelectCampaignDialog());
-        binding.icAddNewInvoice.setOnClickListener(v -> openSaveDraftDialog());
+        binding.icAddNewInvoice.setOnClickListener(v -> {
+            if (selectedCustomer == null || selectedCustomer.id <= 0) {
+                toast("اختار الزبون أولاً");
+                return;
+            }
+            openSaveDraftDialog();
+        });
         binding.icCart.setOnClickListener(v -> {
             android.content.Intent i = new android.content.Intent(this, ActiveInvoicesActivity.class);
             activeInvoicesLauncher.launch(i);
@@ -348,21 +419,27 @@ public class FuelSaleActivity extends BaseActivity {
         if (qty <= 0)   { toast("أدخل الكمية"); return; }
 
         List<co.highfive.petrolstation.fuelsale.dto.PaymentMethodDto> pms = collectPaymentMethodsFromUI();
-        if (pms == null || pms.isEmpty()) {
-            toast("أضف طريقة دفع واحدة على الأقل");
-            return;
-        }
+//        if (pms == null || pms.isEmpty()) {
+//            toast("أضف طريقة دفع واحدة على الأقل");
+//            return;
+//        }
 
         // ===== Build request from UI =====
         FuelPriceAddRequest req = buildCurrentRequestFromUI();
         req.paymentMethods = pms;
+
+        // ✅ هنا مكانه
+        if (!connectionAvailable) {
+            saveOfflineActiveInvoice(req);
+            return;
+        }
 
         ApiClient.ApiParams params = buildSaveFuelSaleParams(req);
 
         showProgressHUD();
 
         // ✅ غيّر Object إلى DTO الحقيقي إذا موجود عندك
-        Type type = new TypeToken<BaseResponse<Object>>() {}.getType();
+        Type type = new TypeToken<BaseResponse<co.highfive.petrolstation.customers.dto.InvoiceDto>>() {}.getType();
 
         apiClient.request(
                 Constant.REQUEST_POST,
@@ -371,14 +448,25 @@ public class FuelSaleActivity extends BaseActivity {
                 null,
                 type,
                 0,
-                new ApiCallback<Object>() {
+                new ApiCallback<co.highfive.petrolstation.customers.dto.InvoiceDto>() {
 
                     @Override
-                    public void onSuccess(Object data, String msg, String rawJson) {
+                    public void onSuccess(co.highfive.petrolstation.customers.dto.InvoiceDto data, String msg, String rawJson) {
                         hideProgressHUD();
 
-
                         showSuccessDialog(msg);
+
+                        Setting setting = null;
+
+                        if (getAppData() != null) {
+                            setting = getAppData().getSetting(); // عدّل حسب مشروعك
+                        }
+
+                        if (setting == null) {
+                            toast(getString(R.string.general_error));
+                            return;
+                        }
+                        printInvoice(setting,data);
 
                     }
 
@@ -408,6 +496,36 @@ public class FuelSaleActivity extends BaseActivity {
                 }
         );
     }
+
+    private void saveOfflineActiveInvoice(FuelPriceAddRequest req) {
+
+        if (req == null || req.customerId == null || req.customerId <= 0) {
+            toast("اختار الزبون أولاً");
+            return;
+        }
+
+        String statement = "فاتورة محروقات";
+        double total = parseDoubleSafe(binding.etAmount.getText());
+        String invoiceNoPlaceholder = "OFF-" + System.currentTimeMillis();
+
+        InvoiceLocalRepository repo = new InvoiceLocalRepository(
+                this,
+                db,
+                getGson(),
+                apiClient
+        );
+
+        dbExecutor.execute(() -> {
+            repo.saveFuelSaleOffline(req, statement, total, invoiceNoPlaceholder);
+
+            mainHandler.post(() -> {
+                toast("تم حفظ الفاتورة محليًا وسيتم إرسالها عند توفر الإنترنت");
+                resetForNewInvoice();
+            });
+        });
+    }
+
+
 
     @NonNull
     private ApiClient.ApiParams buildSaveFuelSaleParams(@NonNull FuelPriceAddRequest r) {
@@ -600,6 +718,11 @@ public class FuelSaleActivity extends BaseActivity {
 
     private void saveCurrentInvoiceAsDraft() {
 
+        if (selectedCustomer == null || selectedCustomer.id <= 0) {
+            toast("اختار الزبون أولاً");
+            return;
+        }
+
         FuelPriceAddRequest req = buildCurrentRequestFromUI();
 
         co.highfive.petrolstation.fuelsale.dto.FuelSaleDraft draft =
@@ -741,7 +864,7 @@ public class FuelSaleActivity extends BaseActivity {
         if (settingsData == null || items.isEmpty() || pumps.isEmpty()) {
             // إذا الإعدادات لسه ما اجت، خزّن ID وطبّق بعد ما يخلص loadFuelSaleSettings
             pendingApplyDraftId = localId;
-            loadFuelSaleSettings();
+            loadFuelSaleSettingsSmart();
             return;
         }
 
@@ -1182,9 +1305,45 @@ public class FuelSaleActivity extends BaseActivity {
             return;
         }
 
-        // ✅ إذا الكاش لزبون قديم لا نمرره
+        // ✅ OFFLINE: load vehicles from ROOM
+        if (!connectionAvailable) {
+
+            showProgressHUD();
+
+            int customerId = selectedCustomer.id;
+
+            dbExecutor.execute(() -> {
+                List<CustomerVehicleEntity> rows = new ArrayList<>();
+                try {
+                    rows = db.customerVehicleDao().getByCustomerId(customerId);
+                } catch (Exception e) {
+                    errorLogger("OfflineVehicles", e.getMessage() == null ? "null" : e.getMessage());
+                }
+
+                ArrayList<CustomerVehicleDto> dtoList = mapVehiclesEntitiesToDto(rows);
+
+                mainHandler.post(() -> {
+                    hideProgressHUD();
+
+                    // update cache
+                    lastVehiclesCustomerId = customerId;
+                    lastVehicleResults = dtoList;
+
+                    openVehicleDialogWithCache(dtoList);
+                });
+            });
+
+            return;
+        }
+
+        // ✅ ONLINE: use cache (same logic you already have)
         ArrayList<CustomerVehicleDto> cache =
                 (lastVehiclesCustomerId == selectedCustomer.id) ? lastVehicleResults : new ArrayList<>();
+
+        openVehicleDialogWithCache(cache);
+    }
+
+    private void openVehicleDialogWithCache(ArrayList<CustomerVehicleDto> cache) {
 
         SelectVehicleDialog d = SelectVehicleDialog.newInstance(
                 selectedCustomer.id,
@@ -1196,10 +1355,8 @@ public class FuelSaleActivity extends BaseActivity {
 
         d.setListener(vehicle -> {
             selectedVehicle = vehicle;
-
             binding.vehicle.setText(buildVehicleDisplayText(vehicle));
 
-            // ✅ خزّن أن الكاش صار تابع لهذا الزبون
             lastVehiclesCustomerId = selectedCustomer.id;
             lastVehicleResults = d.getLastVehicles();
         });
@@ -1410,30 +1567,31 @@ public class FuelSaleActivity extends BaseActivity {
 
                         if (data == null) return;
 
-                        settingsData = data;
-
-                        items.clear();
-                        pumps.clear();
-                        campaigns.clear();
-                        paymentTypes.clear();
-
-                        if (data.items != null) items.addAll(data.items);
-                        if (data.pumps != null) pumps.addAll(data.pumps);
-                        if (data.campaigns != null) campaigns.addAll(data.campaigns);
-                        if (data.payment_type != null) paymentTypes.addAll(data.payment_type);
-
-                        itemsAdapter.updateData(items);
-                        pumpsAdapter.updateData(pumps);
-
-                        hideCampaign();
-
-                        paymentContainer.removeAllViews();
-                        addPaymentRow();
-                        if (pendingApplyDraftId != null) {
-                            int id = pendingApplyDraftId;
-                            pendingApplyDraftId = null;
-                            applyDraftById(id);
-                        }
+//                        settingsData = data;
+//
+//                        items.clear();
+//                        pumps.clear();
+//                        campaigns.clear();
+//                        paymentTypes.clear();
+//
+//                        if (data.items != null) items.addAll(data.items);
+//                        if (data.pumps != null) pumps.addAll(data.pumps);
+//                        if (data.campaigns != null) campaigns.addAll(data.campaigns);
+//                        if (data.payment_type != null) paymentTypes.addAll(data.payment_type);
+//
+//                        itemsAdapter.updateData(items);
+//                        pumpsAdapter.updateData(pumps);
+//
+//                        hideCampaign();
+//
+//                        paymentContainer.removeAllViews();
+//                        addPaymentRow();
+//                        if (pendingApplyDraftId != null) {
+//                            int id = pendingApplyDraftId;
+//                            pendingApplyDraftId = null;
+//                            applyDraftById(id);
+//                        }
+                        applyFuelSettingsToUI(data);
                     }
 
                     @Override
@@ -1631,6 +1789,32 @@ public class FuelSaleActivity extends BaseActivity {
         });
     }
 
+    @NonNull
+    private ArrayList<CustomerVehicleDto> mapVehiclesEntitiesToDto(@NonNull List<CustomerVehicleEntity> rows) {
+        ArrayList<CustomerVehicleDto> out = new ArrayList<>();
+        for (CustomerVehicleEntity e : rows) {
+            if (e == null) continue;
+
+            CustomerVehicleDto d = new CustomerVehicleDto();
+            d.id = e.id;
+            d.customer_id = e.customerId;
+            d.vehicle_number = e.vehicleNumber;
+            d.vehicle_type = e.vehicleType;
+            d.vehicle_color = e.vehicleColor;
+            d.model = e.model;
+            d.license_expiry_date = e.licenseExpiryDate;
+            d.notes = e.notes;
+            d.created_at = e.createdAt;
+
+            d.vehicle_type_name = e.vehicleTypeName;
+            d.vehicle_color_name = e.vehicleColorName;
+
+            d.account_id = e.accountId;
+
+            out.add(d);
+        }
+        return out;
+    }
 
 
 }

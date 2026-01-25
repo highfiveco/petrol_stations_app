@@ -16,9 +16,22 @@ import co.highfive.petrolstation.pos.dto.PosActiveInvoice;
 public class PosInvoiceDbHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "pos_local.db";
-    private static final int DB_VERSION =  3;
+
+    // ✅ ارفع النسخة
+    private static final int DB_VERSION = 4;
 
     public static final String TBL = "pos_active_invoices";
+
+    // ✅ columns
+    private static final String COL_ID = "id";
+    private static final String COL_CUSTOMER_ID = "customer_id";
+    private static final String COL_CUSTOMER_NAME = "customer_name";
+    private static final String COL_CUSTOMER_MOBILE = "customer_mobile"; // ✅ NEW
+    private static final String COL_ITEMS_JSON = "items_details_json";
+    private static final String COL_ACCOUNT_ID = "account_id";
+    private static final String COL_NOTE = "note";
+    private static final String COL_PAYMENTS_JSON = "payments_json";
+    private static final String COL_CREATED_AT = "created_at";
 
     public PosInvoiceDbHelper(@Nullable Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -28,54 +41,90 @@ public class PosInvoiceDbHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         String sql =
                 "CREATE TABLE IF NOT EXISTS " + TBL + " (" +
-                        "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                        "customer_id INTEGER NOT NULL," +
-                        "customer_name TEXT," +
-                        "items_details_json TEXT NOT NULL," +
-                        "account_id INTEGER DEFAULT 0," +
-                        "note TEXT," +
-                        "payments_json TEXT," +
-                        "created_at INTEGER NOT NULL" +
+                        COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        COL_CUSTOMER_ID + " INTEGER NOT NULL," +
+                        COL_CUSTOMER_NAME + " TEXT," +
+                        COL_CUSTOMER_MOBILE + " TEXT," +               // ✅ NEW
+                        COL_ITEMS_JSON + " TEXT NOT NULL," +
+                        COL_ACCOUNT_ID + " INTEGER DEFAULT 0," +
+                        COL_NOTE + " TEXT," +
+                        COL_PAYMENTS_JSON + " TEXT," +
+                        COL_CREATED_AT + " INTEGER NOT NULL" +
                         ")";
         db.execSQL(sql);
 
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_pos_customer_id ON " + TBL + "(customer_id)");
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_pos_created_at ON " + TBL + "(created_at)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_pos_customer_id ON " + TBL + "(" + COL_CUSTOMER_ID + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_pos_created_at ON " + TBL + "(" + COL_CREATED_AT + ")");
     }
-
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
+        // upgrades to v3
         if (oldVersion < 3) {
-            try { db.execSQL("ALTER TABLE " + TBL + " ADD COLUMN account_id INTEGER DEFAULT 0"); } catch (Exception ignore) {}
-            try { db.execSQL("ALTER TABLE " + TBL + " ADD COLUMN note TEXT"); } catch (Exception ignore) {}
-            try { db.execSQL("ALTER TABLE " + TBL + " ADD COLUMN payments_json TEXT"); } catch (Exception ignore) {}
+            try { db.execSQL("ALTER TABLE " + TBL + " ADD COLUMN " + COL_ACCOUNT_ID + " INTEGER DEFAULT 0"); } catch (Exception ignore) {}
+            try { db.execSQL("ALTER TABLE " + TBL + " ADD COLUMN " + COL_NOTE + " TEXT"); } catch (Exception ignore) {}
+            try { db.execSQL("ALTER TABLE " + TBL + " ADD COLUMN " + COL_PAYMENTS_JSON + " TEXT"); } catch (Exception ignore) {}
         }
 
-
-
+        // ✅ upgrade to v4: add customer_mobile
+        if (oldVersion < 4) {
+            try { db.execSQL("ALTER TABLE " + TBL + " ADD COLUMN " + COL_CUSTOMER_MOBILE + " TEXT"); } catch (Exception ignore) {}
+        }
     }
-    public long insertInvoice(int customerId, String customerName, int accountId, String itemsJson) {
+
+    /* ================= INSERT / UPDATE ================= */
+
+    // ✅ NEW signature includes customerMobile
+    public long insertInvoice(int customerId, String customerName, String customerMobile, int accountId, String itemsJson) {
 
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
 
-        cv.put("customer_id", customerId);
-        cv.put("customer_name", customerName);
-        cv.put("account_id", accountId);
-        cv.put("items_details_json", itemsJson);
-        cv.put("created_at", System.currentTimeMillis());
+        cv.put(COL_CUSTOMER_ID, customerId);
+        cv.put(COL_CUSTOMER_NAME, customerName);
+        cv.put(COL_CUSTOMER_MOBILE, customerMobile); // ✅ NEW
+        cv.put(COL_ACCOUNT_ID, accountId);
+        cv.put(COL_ITEMS_JSON, itemsJson);
+        cv.put(COL_CREATED_AT, System.currentTimeMillis());
 
-        return db.insert("pos_active_invoices", null, cv);
+        return db.insert(TBL, null, cv);
     }
+
+    // ✅ NEW signature includes customerMobile
+    public boolean updateInvoice(long invoiceId, int customerId, String customerName, String customerMobile, int accountId, String itemsJson) {
+
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+
+        cv.put(COL_CUSTOMER_ID, customerId);
+        cv.put(COL_CUSTOMER_NAME, customerName);
+        cv.put(COL_CUSTOMER_MOBILE, customerMobile); // ✅ NEW
+        cv.put(COL_ACCOUNT_ID, accountId);
+        cv.put(COL_ITEMS_JSON, itemsJson);
+
+        int rows = db.update(TBL, cv, COL_ID + "=?", new String[]{String.valueOf(invoiceId)});
+        return rows > 0;
+    }
+
+    /* ================= READ ================= */
 
     public List<PosActiveInvoice> listInvoices() {
         SQLiteDatabase db = getReadableDatabase();
         List<PosActiveInvoice> out = new ArrayList<>();
 
         Cursor c = db.rawQuery(
-                "SELECT id,account_id, customer_id, customer_name, items_details_json, note, payments_json, created_at FROM " + TBL + " ORDER BY id DESC",
+                "SELECT " +
+                        COL_ID + "," +
+                        COL_ACCOUNT_ID + "," +
+                        COL_CUSTOMER_ID + "," +
+                        COL_CUSTOMER_NAME + "," +
+                        COL_CUSTOMER_MOBILE + "," +     // ✅ NEW
+                        COL_ITEMS_JSON + "," +
+                        COL_NOTE + "," +
+                        COL_PAYMENTS_JSON + "," +
+                        COL_CREATED_AT +
+                        " FROM " + TBL + " ORDER BY " + COL_ID + " DESC",
                 null
         );
 
@@ -86,10 +135,11 @@ public class PosInvoiceDbHelper extends SQLiteOpenHelper {
                 inv.accountId = c.getInt(1);
                 inv.customerId = c.getInt(2);
                 inv.customerName = c.getString(3);
-                inv.itemsJson = c.getString(4);
-                inv.note = c.getString(5);
-                inv.paymentsJson = c.getString(6);
-                inv.createdAt = c.getLong(7);
+                inv.customerMobile = c.getString(4);  // ✅ NEW
+                inv.itemsJson = c.getString(5);
+                inv.note = c.getString(6);
+                inv.paymentsJson = c.getString(7);
+                inv.createdAt = c.getLong(8);
                 out.add(inv);
             }
         } finally {
@@ -101,9 +151,19 @@ public class PosInvoiceDbHelper extends SQLiteOpenHelper {
 
     public PosActiveInvoice getInvoice(long invoiceId) {
         SQLiteDatabase db = getReadableDatabase();
+
         Cursor c = db.rawQuery(
-                "SELECT id, customer_id,account_id, customer_name, items_details_json, note, payments_json, created_at " +
-                        "FROM " + TBL + " WHERE id=? LIMIT 1",
+                "SELECT " +
+                        COL_ID + "," +
+                        COL_CUSTOMER_ID + "," +
+                        COL_ACCOUNT_ID + "," +
+                        COL_CUSTOMER_NAME + "," +
+                        COL_CUSTOMER_MOBILE + "," +    // ✅ NEW
+                        COL_ITEMS_JSON + "," +
+                        COL_NOTE + "," +
+                        COL_PAYMENTS_JSON + "," +
+                        COL_CREATED_AT +
+                        " FROM " + TBL + " WHERE " + COL_ID + "=? LIMIT 1",
                 new String[]{String.valueOf(invoiceId)}
         );
 
@@ -114,10 +174,11 @@ public class PosInvoiceDbHelper extends SQLiteOpenHelper {
                 inv.customerId = c.getInt(1);
                 inv.accountId = c.getInt(2);
                 inv.customerName = c.getString(3);
-                inv.itemsJson = c.getString(4);
-                inv.note = c.getString(5);
-                inv.paymentsJson = c.getString(6);
-                inv.createdAt = c.getLong(7);
+                inv.customerMobile = c.getString(4); // ✅ NEW
+                inv.itemsJson = c.getString(5);
+                inv.note = c.getString(6);
+                inv.paymentsJson = c.getString(7);
+                inv.createdAt = c.getLong(8);
                 return inv;
             }
             return null;
@@ -126,28 +187,15 @@ public class PosInvoiceDbHelper extends SQLiteOpenHelper {
         }
     }
 
-
-    public boolean updateInvoice(long invoiceId, int customerId, String customerName, int accountId, String itemsJson) {
-
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues cv = new ContentValues();
-
-        cv.put("customer_id", customerId);
-        cv.put("customer_name", customerName);
-        cv.put("account_id", accountId);
-        cv.put("items_details_json", itemsJson);
-
-        int rows = db.update("pos_active_invoices", cv, "id=?", new String[]{String.valueOf(invoiceId)});
-        return rows > 0;
-    }
+    /* ================= PARTIAL UPDATES ================= */
 
     public boolean updateInvoiceItemsJson(long invoiceId, String itemsJson) {
         try {
             SQLiteDatabase db = getWritableDatabase();
             ContentValues cv = new ContentValues();
-            cv.put("items_details_json", itemsJson);
+            cv.put(COL_ITEMS_JSON, itemsJson);
 
-            int rows = db.update(TBL, cv, "id = ?", new String[]{String.valueOf(invoiceId)});
+            int rows = db.update(TBL, cv, COL_ID + "=?", new String[]{String.valueOf(invoiceId)});
             return rows > 0;
         } catch (Exception e) {
             return false;
@@ -157,20 +205,44 @@ public class PosInvoiceDbHelper extends SQLiteOpenHelper {
     public boolean updateInvoiceCheckout(long invoiceId, String note, String paymentsJson) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put("note", note);
-        cv.put("payments_json", paymentsJson);
-        int rows = db.update(TBL, cv, "id=?", new String[]{String.valueOf(invoiceId)});
+        cv.put(COL_NOTE, note);
+        cv.put(COL_PAYMENTS_JSON, paymentsJson);
+
+        int rows = db.update(TBL, cv, COL_ID + "=?", new String[]{String.valueOf(invoiceId)});
         return rows > 0;
     }
-    public boolean deleteInvoice(long invoiceId) {
+
+    // ✅ optional helper: update only customer fields
+    public boolean updateInvoiceCustomer(long invoiceId, int customerId, String customerName, String customerMobile, int accountId) {
         try {
             SQLiteDatabase db = getWritableDatabase();
-            int rows = db.delete(TBL, "id = ?", new String[]{String.valueOf(invoiceId)});
+            ContentValues cv = new ContentValues();
+            cv.put(COL_CUSTOMER_ID, customerId);
+            cv.put(COL_CUSTOMER_NAME, customerName);
+            cv.put(COL_CUSTOMER_MOBILE, customerMobile);
+            cv.put(COL_ACCOUNT_ID, accountId);
+
+            int rows = db.update(TBL, cv, COL_ID + "=?", new String[]{String.valueOf(invoiceId)});
             return rows > 0;
         } catch (Exception e) {
             return false;
         }
     }
 
+    public boolean deleteInvoice(long invoiceId) {
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            int rows = db.delete(TBL, COL_ID + "=?", new String[]{String.valueOf(invoiceId)});
+            return rows > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
+    public void updateInvoiceAccountId(long invoiceId, int accountId) {
+        SQLiteDatabase db = getWritableDatabase();
+        android.content.ContentValues cv = new android.content.ContentValues();
+        cv.put("account_id", accountId);
+        db.update("pos_invoices", cv, "id=?", new String[]{String.valueOf(invoiceId)});
+    }
 }

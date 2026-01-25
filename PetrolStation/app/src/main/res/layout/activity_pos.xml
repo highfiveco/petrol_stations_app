@@ -42,7 +42,7 @@
                         android:textSize="20sp"
                         android:includeFontPadding="false"
                         android:textColor="@color/white"
-                        android:text="بيع المحروقات"/>
+                        android:text="@string/pos"/>
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/phone"

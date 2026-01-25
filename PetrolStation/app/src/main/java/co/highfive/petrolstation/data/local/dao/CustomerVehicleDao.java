@@ -29,5 +29,8 @@ public interface CustomerVehicleDao {
     @androidx.room.Query("SELECT * FROM customer_vehicles WHERE id = :id LIMIT 1")
     CustomerVehicleEntity getById(int id);
 
+    @Query("SELECT * FROM customer_vehicles WHERE customerId = :customerId ORDER BY id DESC")
+    List<CustomerVehicleEntity> getByCustomerId(int customerId);
+
 
 }

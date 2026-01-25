@@ -7,6 +7,7 @@ public class PosActiveInvoice {
 
     public int accountId;
 
+    public String customerMobile;
 
     public String itemsJson;   // qtyMap as json
     public long createdAt;     // millis

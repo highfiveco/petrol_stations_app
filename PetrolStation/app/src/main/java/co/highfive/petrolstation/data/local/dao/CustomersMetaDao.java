@@ -18,4 +18,7 @@ public interface CustomersMetaDao {
 
     @Query("DELETE FROM customers_meta_cache")
     void clear();
+
+    @Query("SELECT * FROM customers_meta_cache WHERE id = 1 LIMIT 1")
+    CustomersMetaCacheEntity getOne();
 }

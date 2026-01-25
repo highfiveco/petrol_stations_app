@@ -344,5 +344,6 @@
     <string name="add_new_invoice">تأكيد اضافة فاتورة جديدة</string>
     <string name="categories">التصنيفات</string>
     <string name="all">الكل</string>
+    <string name="update_items">تحديث المنتجات</string>
 
 </resources>

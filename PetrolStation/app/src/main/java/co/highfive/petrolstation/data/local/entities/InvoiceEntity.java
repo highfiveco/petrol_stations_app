@@ -6,12 +6,21 @@ import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "invoices",
-        indices = { @Index("customerId"), @Index("isFuelSale") }
+        indices = {
+                @Index("customerId"),
+                @Index("accountId"),
+                @Index("pumpId"),
+                @Index("campaignId"),
+                @Index("customerVehicleId"),
+                @Index("isFuelSale"),
+                @Index("createdAtTs")
+        }
 )
 public class InvoiceEntity {
-    @PrimaryKey public int id;
 
-    // مهم لأنه بالريسبونس الفواتير nested داخل customer
+    @PrimaryKey
+    public int id; // online id from server
+
     public int customerId;
 
     public String date;
@@ -31,10 +40,8 @@ public class InvoiceEntity {
     public Integer customerVehicleId;
 
     public Integer isFuelSale; // 0/1
-    public String createdAt;
+    public String createdAt;   // server string
 
-    // snapshots JSON
-    public String accountJson;
-    public String pumpJson;
-    public String customerVehicleJson;
+    public long createdAtTs;   // ✅ NEW (for ordering)
+    public long updatedAt;     // cache
 }

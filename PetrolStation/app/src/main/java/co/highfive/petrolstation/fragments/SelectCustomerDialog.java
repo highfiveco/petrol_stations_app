@@ -33,7 +33,14 @@ import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.network.ApiError;
 import co.highfive.petrolstation.network.BaseResponse;
 import co.highfive.petrolstation.network.Endpoints;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import co.highfive.petrolstation.data.local.AppDatabase;
+import co.highfive.petrolstation.data.local.DatabaseProvider;
+import co.highfive.petrolstation.data.local.entities.CustomerEntity;
+import android.os.Handler;
+import android.os.Looper;
 public class SelectCustomerDialog extends DialogFragment {
 
     public interface Listener {
@@ -50,6 +57,9 @@ public class SelectCustomerDialog extends DialogFragment {
     private int selectedCustomerId = 0;
 
     private SelectSearchCustomerAdapter adapter;
+    private AppDatabase db;
+    private ExecutorService dbExecutor;
+    private Handler mainHandler;
 
     public SelectCustomerDialog() {}
 
@@ -70,7 +80,15 @@ public class SelectCustomerDialog extends DialogFragment {
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        if (context instanceof BaseActivity) baseActivity = (BaseActivity) context;
+        if (context instanceof BaseActivity) {
+            baseActivity = (BaseActivity) context;
+
+            // ✅ Room + threading
+            db = DatabaseProvider.get(context);
+            dbExecutor = Executors.newSingleThreadExecutor();
+            mainHandler = new Handler(Looper.getMainLooper());
+        }
+
     }
 
     @Nullable
@@ -138,6 +156,20 @@ public class SelectCustomerDialog extends DialogFragment {
         binding.etSearch.setSelection(binding.etSearch.getText() != null ? binding.etSearch.getText().length() : 0);
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        if (dbExecutor != null) {
+            try { dbExecutor.shutdown(); } catch (Exception ignored) {}
+        }
+    }
+
     private void doSearch() {
         if (baseActivity == null) return;
 
@@ -149,10 +181,16 @@ public class SelectCustomerDialog extends DialogFragment {
             return;
         }
 
+        // ✅ OFFLINE
+        if (!baseActivity.connectionAvailable) {
+            doSearchOffline(q);
+            return;
+        }
+
+        // ✅ ONLINE (نفس كودك)
         baseActivity.showProgressHUD();
 
         Type type = new TypeToken<BaseResponse<List<FuelCustomerDto>>>(){}.getType();
-
         ApiClient.ApiParams params = new ApiClient.ApiParams().add("search", q);
 
         baseActivity.apiClient.request(
@@ -171,7 +209,7 @@ public class SelectCustomerDialog extends DialogFragment {
                         if (data != null) lastResults.addAll(data);
 
                         adapter.setItems(lastResults);
-                        adapter.setSelectedId(selectedCustomerId); // keep selection if exists
+                        adapter.setSelectedId(selectedCustomerId);
                     }
 
                     @Override
@@ -201,6 +239,7 @@ public class SelectCustomerDialog extends DialogFragment {
         );
     }
 
+
     public String getLastSearch() { return lastSearch; }
     public ArrayList<FuelCustomerDto> getLastResults() { return lastResults; }
     public int getSelectedCustomerId() { return selectedCustomerId; }
@@ -212,4 +251,99 @@ public class SelectCustomerDialog extends DialogFragment {
     private static String safeTrim(CharSequence cs) {
         return cs == null ? "" : cs.toString().trim();
     }
+
+    @NonNull
+    private ArrayList<FuelCustomerDto> mapCustomersEntitiesToDto(@NonNull List<CustomerEntity> rows) {
+        ArrayList<FuelCustomerDto> out = new ArrayList<>();
+        for (CustomerEntity e : rows) {
+            if (e == null) continue;
+
+            FuelCustomerDto c = new FuelCustomerDto();
+            c.id = e.id;
+            c.name = e.name;
+//            c.mobile = e.mobile;
+            c.account_id = e.accountId; // مهم عشان الفيويل سيل
+            out.add(c);
+        }
+        return out;
+    }
+    private void doSearchOffline(@NonNull String q) {
+        if (db == null || dbExecutor == null || mainHandler == null) {
+            toastLocal(getString(R.string.general_error));
+            return;
+        }
+
+        baseActivity.showProgressHUD();
+
+        dbExecutor.execute(() -> {
+            List<CustomerEntity> mainRows = new ArrayList<>();
+            List<co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity> offlineRows = new ArrayList<>();
+
+            try {
+                mainRows = db.customerDao().search(q);
+            } catch (Exception e) {
+                baseActivity.errorLogger("CustomerOfflineSearch_main", safeMsg(e));
+            }
+
+            try {
+                // ✅ لازم تكون موجودة في OfflineCustomerDao
+                offlineRows = db.offlineCustomerDao().search(q);
+            } catch (Exception e) {
+                baseActivity.errorLogger("CustomerOfflineSearch_offline", safeMsg(e));
+            }
+
+            ArrayList<FuelCustomerDto> mapped = new ArrayList<>();
+            mapped.addAll(mapCustomersEntitiesToDto(mainRows));
+            mapped.addAll(mapOfflineCustomersToDto(offlineRows)); // ✅ NEW
+
+            mainHandler.post(() -> {
+                baseActivity.hideProgressHUD();
+
+                lastResults.clear();
+                lastResults.addAll(mapped);
+
+                adapter.setItems(lastResults);
+                adapter.setSelectedId(selectedCustomerId);
+
+                if (lastResults.isEmpty()) toastLocal("لا توجد نتائج (Offline)");
+            });
+        });
+    }
+
+    private String safeMsg(Exception e) {
+        return (e == null || e.getMessage() == null) ? "null" : e.getMessage();
+    }
+
+    @NonNull
+    private ArrayList<FuelCustomerDto> mapOfflineCustomersToDto(
+            @NonNull List<co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity> rows
+    ) {
+        ArrayList<FuelCustomerDto> out = new ArrayList<>();
+        for (co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity e : rows) {
+            if (e == null) continue;
+
+            FuelCustomerDto c = new FuelCustomerDto();
+
+            long localId = e.localId;
+
+            // ✅ Negative id للـ POS/DB key
+            int fakeId = (localId > Integer.MAX_VALUE) ? -1 : (int) (-localId);
+            c.id = fakeId;
+
+            c.name = e.name;
+            c.mobile = e.mobile; // إذا بدك
+            c.account_id = 0;    // إذا ما عندك account للأوفلاين
+
+            // ✅ flags
+            c.is_offline = true;
+            c.local_id = localId;
+
+            out.add(c);
+        }
+        return out;
+    }
+
+
+
+
 }

@@ -9,7 +9,9 @@ import androidx.room.PrimaryKey;
         indices = { @Index("invoiceId"), @Index("itemId") }
 )
 public class InvoiceDetailEntity {
-    @PrimaryKey public int id;
+
+    @PrimaryKey
+    public int id;
 
     public int invoiceId;
     public Integer itemId;
@@ -17,7 +19,4 @@ public class InvoiceDetailEntity {
     public Integer updateCostPrice;
     public Double count;
     public Double price;
-
-    // snapshot JSON
-    public String itemJson;
 }

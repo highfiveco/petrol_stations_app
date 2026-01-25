@@ -60,7 +60,7 @@ public class CustomerInvoicesAdapter extends RecyclerView.Adapter<CustomerInvoic
     public void onBindViewHolder(@NonNull VH h, int position) {
         InvoiceDto inv = items.get(position);
 
-        h.binding.txtInvoiceNumber.setText(safe(inv.invoice_no));
+//        h.binding.txtInvoiceNumber.setText(safe(inv.invoice_no));
         h.binding.txtInvoiceDate.setText(safe(inv.date));
         h.binding.txtInvoiceAmount.setText(formatNumber(inv.total));
 
@@ -79,6 +79,38 @@ public class CustomerInvoicesAdapter extends RecyclerView.Adapter<CustomerInvoic
         h.binding.printInvoice.setOnClickListener(v -> {
             if (listener != null) listener.onPrint(inv);
         });
+
+        boolean isPending = inv.is_offline && (inv.sync_status == 0);
+        boolean isFailed  = inv.is_offline && (inv.sync_status == 2);
+
+        String no = safe(inv.invoice_no);
+        if (inv.is_offline) {
+            if (inv.sync_status == 0) no += "  •  Pending";
+            else if (inv.sync_status == 2) no += "  •  Failed";
+        }
+        h.binding.txtInvoiceNumber.setText(no);
+
+        // (اختياري) أخفي زر print للـ pending
+
+        boolean canPrint = !inv.is_offline || (inv.id > 0 && inv.sync_status == 1);
+        h.binding.printInvoice.setEnabled(canPrint);
+        h.binding.printInvoice.setAlpha(canPrint ? 1f : 0.4f);
+
+        if (inv.is_offline) {
+            h.binding.txtStatusLayout.setVisibility(View.VISIBLE);
+
+            if (inv.sync_status == 0) {
+                h.binding.txtStatus.setText("Pending");
+            } else if (inv.sync_status == 2) {
+                h.binding.txtStatus.setText("Failed");
+            } else {
+                h.binding.txtStatus.setText("Offline");
+            }
+        } else {
+            h.binding.txtStatusLayout.setVisibility(View.GONE);
+        }
+
+
     }
 
     @Override

@@ -36,9 +36,9 @@ public class FuelSalesMappers {
 
             // snapshots
             e.accountJson = inv.account != null ? gson.toJson(inv.account) : null;
-            e.pumpJson = inv.pump != null ? gson.toJson(inv.pump) : null;
-            e.campaignJson = inv.campaign != null ? gson.toJson(inv.campaign) : null;
-            e.customerVehicleJson = inv.customer_vehicle != null ? gson.toJson(inv.customer_vehicle) : null;
+//            e.pumpJson = inv.pump != null ? gson.toJson(inv.pump) : null;
+//            e.campaignJson = inv.campaign != null ? gson.toJson(inv.campaign) : null;
+//            e.customerVehicleJson = inv.customer_vehicle != null ? gson.toJson(inv.customer_vehicle) : null;
 
             e.updatedAt = System.currentTimeMillis();
 
@@ -68,7 +68,7 @@ public class FuelSalesMappers {
                 e.price = d.price;
                 e.updateCostPrice = d.update_cost_price;
 
-                e.itemJson = d.item != null ? gson.toJson(d.item) : null;
+//                e.itemJson = d.item != null ? gson.toJson(d.item) : null;
 
                 out.add(e);
             }

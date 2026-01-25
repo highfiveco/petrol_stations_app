@@ -6,6 +6,9 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 import android.location.Location;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -35,6 +38,7 @@ import androidx.core.app.ActivityOptionsCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.common.reflect.TypeToken;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -53,6 +57,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.net.URLConnection;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -75,6 +80,7 @@ import co.highfive.petrolstation.activities.SplashActivity;
 import co.highfive.petrolstation.customers.dto.InvoiceDetailDto;
 import co.highfive.petrolstation.customers.dto.InvoiceDto;
 import co.highfive.petrolstation.fragments.UpdateAppDialog;
+import co.highfive.petrolstation.fuelsale.dto.FuelPriceSettingsData;
 import co.highfive.petrolstation.hazemhamadaqa.Http.HttpRequest.RequestAsyncTask;
 import co.highfive.petrolstation.hazemhamadaqa.Http.HttpResponse.AsyncResponse;
 import co.highfive.petrolstation.hazemhamadaqa.Http.HttpResponse.model.ResponseObject;
@@ -96,6 +102,8 @@ import co.highfive.petrolstation.models.TableItem;
 import co.highfive.petrolstation.models.Transactions;
 import co.highfive.petrolstation.models.User;
 import co.highfive.petrolstation.network.ApiClient;
+import co.highfive.petrolstation.network.BaseResponse;
+import co.highfive.petrolstation.pos.dto.PosSettingsData;
 import co.highfive.petrolstation.utils.BluetoothUtil;
 import co.highfive.petrolstation.utils.ESCUtil;
 import co.highfive.petrolstation.utils.SunmiPrintHelper;
@@ -384,6 +392,45 @@ public class BaseActivity extends AppCompatActivity implements Constant {
         }
     }
 
+    public void hideSoftKeyboard(View tokenView) {
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm == null) return;
+
+            View v = tokenView != null ? tokenView : getWindow().getDecorView();
+            imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+        } catch (Exception ignored) {}
+    }
+
+    public void forceHideKeyboardAndClearFocus(View root) {
+        if (root == null) return;
+
+        try {
+            View focused = root.findFocus();
+            if (focused instanceof EditText) {
+                focused.clearFocus();
+
+                // ✅ يمنع رجوع الكيبورد فورًا بسبب focus
+                focused.setFocusable(false);
+                focused.setFocusableInTouchMode(false);
+
+                // رجّعهم بسرعة بعد ما يخلص السكرول/اللمس
+                focused.postDelayed(() -> {
+                    focused.setFocusable(true);
+                    focused.setFocusableInTouchMode(true);
+                }, 150);
+            }
+
+            // ✅ انقل الفوكس لشيء غير Editable
+            root.requestFocus();
+
+            // ✅ اخفي الكيبورد ب token مضمون
+            hideSoftKeyboard(root);
+
+        } catch (Exception ignored) {}
+    }
+
+
     public void showSoftKeyboard(View view) {
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         view.requestFocus();
@@ -626,6 +673,89 @@ public class BaseActivity extends AppCompatActivity implements Constant {
             }
         }
     }
+
+    public void setupUIToHideKeyboard(View root) {
+        if (root == null) return;
+
+        root.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+                View focused = root.findFocus(); // ✅ بدل getCurrentFocus()
+
+                if (focused instanceof EditText) {
+                    Rect outRect = new Rect();
+                    focused.getGlobalVisibleRect(outRect);
+
+                    if (!outRect.contains((int) event.getRawX(), (int) event.getRawY())) {
+                        focused.clearFocus();
+                        hideSoftKeyboard();
+                        root.requestFocus(); // ✅ مهم جدًا داخل Dialog
+                    }
+                } else {
+                    hideSoftKeyboard();
+                }
+            }
+            return false;
+        });
+    }
+
+
+    public void hideKeyboardOnScroll(View scrollView) {
+        if (scrollView == null) return;
+
+        scrollView.setOnTouchListener(new View.OnTouchListener() {
+            float startY = 0;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    startY = event.getY();
+                }
+
+                if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    float dy = Math.abs(event.getY() - startY);
+                    if (dy > 8) {
+                        View root = v.getRootView();
+                        View focused = root != null ? root.findFocus() : getCurrentFocus(); // ✅
+                        if (focused != null) focused.clearFocus();
+                        hideSoftKeyboard();
+                        if (root != null) root.requestFocus();
+                    }
+                }
+                return false;
+            }
+        });
+    }
+
+    public void hideKeyboardOnScrollUniversal(final View root, final View scrollable) {
+        if (root == null || scrollable == null) return;
+
+        final Runnable hideAction = () -> {
+            try {
+                View focused = root.findFocus(); // أفضل من getCurrentFocus داخل Dialog
+                if (focused != null) focused.clearFocus();
+                hideSoftKeyboard();
+                root.requestFocus(); // مهم داخل Dialog
+            } catch (Exception ignored) {}
+        };
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // API 23+
+            scrollable.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                if (scrollY != oldScrollY || scrollX != oldScrollX) {
+                    hideAction.run();
+                }
+            });
+        } else {
+            // API < 23
+            scrollable.getViewTreeObserver().addOnScrollChangedListener(() -> hideAction.run());
+        }
+    }
+
+
+
+
     public Date parseDateTime(String dateTime){
 
         try{
@@ -1451,6 +1581,26 @@ public class BaseActivity extends AppCompatActivity implements Constant {
                 // Header (Station Name + Address)
                 // =========================
                 SunmiPrintHelper.getInstance().changeFontBold();
+
+                // اسم الشركة + اللوغو (مثل القديم)
+                try {
+                    String logoPath = getSessionManager().getString(getSessionKeys().downloadImage);
+                    if (logoPath != null && !logoPath.trim().isEmpty()) {
+                        File file = new File(logoPath);
+                        if (file.exists() && file.length() > 0) {
+                            Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+                            if (bitmap != null) {
+                                SunmiPrintHelper.getInstance().setAlign(1);
+                                SunmiPrintHelper.getInstance().printBitmap(bitmap, safe(setting.getName()));
+                            } else {
+                                SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getName())}, new int[]{1}, new int[]{1});
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getName())}, new int[]{1}, new int[]{1});
+                }
+
                 SunmiPrintHelper.getInstance().setAlign(1);
 
                 String stationName = safe(setting.getName());
@@ -1688,7 +1838,7 @@ public class BaseActivity extends AppCompatActivity implements Constant {
     public void printDashedLine() {
         // متقطعة (خفيفة) مثل الصورة
         SunmiPrintHelper.getInstance().printTable(
-                new String[]{"- - - - - - - - - - - - - - - -"},
+                new String[]{"- - - - - - - - - - - - - - - "},
                 new int[]{1},
                 new int[]{1}
         );
@@ -1697,7 +1847,7 @@ public class BaseActivity extends AppCompatActivity implements Constant {
     public void printLine() {
         // متقطعة (خفيفة) مثل الصورة
         SunmiPrintHelper.getInstance().printTable(
-                new String[]{"________________________________"},
+                new String[]{"______________________________"},
                 new int[]{1},
                 new int[]{1}
         );
@@ -1733,19 +1883,18 @@ public class BaseActivity extends AppCompatActivity implements Constant {
 
                 // اسم الشركة + اللوغو (مثل القديم)
                 try {
-                    String imgFlag = getSessionManager().getString(getSessionKeys().downloadImage);
-                    if (imgFlag != null) {
-                        java.io.File path = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES);
-                        java.io.File file = new java.io.File(path, "logo.png");
-                        if (file.exists()) {
-                            android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeFile(file.getAbsolutePath());
-                            SunmiPrintHelper.getInstance().setAlign(1);
-                            SunmiPrintHelper.getInstance().printBitmap(bitmap, safe(setting.getName()));
-                        } else {
-                            SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getName())}, new int[]{1}, new int[]{1});
+                    String logoPath = getSessionManager().getString(getSessionKeys().downloadImage);
+                    if (logoPath != null && !logoPath.trim().isEmpty()) {
+                        File file = new File(logoPath);
+                        if (file.exists() && file.length() > 0) {
+                            Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+                            if (bitmap != null) {
+                                SunmiPrintHelper.getInstance().setAlign(1);
+                                SunmiPrintHelper.getInstance().printBitmap(bitmap, safe(setting.getName()));
+                            } else {
+                                SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getName())}, new int[]{1}, new int[]{1});
+                            }
                         }
-                    } else {
-                        SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getName())}, new int[]{1}, new int[]{1});
                     }
                 } catch (Exception e) {
                     SunmiPrintHelper.getInstance().printTable(new String[]{safe(setting.getName())}, new int[]{1}, new int[]{1});
@@ -1836,6 +1985,32 @@ public class BaseActivity extends AppCompatActivity implements Constant {
 
         } catch (Exception e) {
             errorLogger("printMove", e.getMessage() == null ? "null" : e.getMessage());
+        }
+    }
+
+    public PosSettingsData getPosSettingsFromSession() {
+        try {
+            String raw = getSessionManager().getString(getSessionKeys().pos_settings_json);
+            if (raw == null || raw.trim().isEmpty()) return null;
+
+            Type type = new TypeToken<BaseResponse<PosSettingsData>>() {}.getType();
+            BaseResponse<PosSettingsData> resp = getGson().fromJson(raw, type);
+            return resp != null ? resp.data : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public FuelPriceSettingsData getFuelSettingsFromSession() {
+        try {
+            String raw = getSessionManager().getString(getSessionKeys().fuel_price_settings_json);
+            if (raw == null || raw.trim().isEmpty()) return null;
+
+            Type type = new TypeToken<BaseResponse<FuelPriceSettingsData>>() {}.getType();
+            BaseResponse<FuelPriceSettingsData> resp = getGson().fromJson(raw, type);
+            return resp != null ? resp.data : null;
+        } catch (Exception e) {
+            return null;
         }
     }
 

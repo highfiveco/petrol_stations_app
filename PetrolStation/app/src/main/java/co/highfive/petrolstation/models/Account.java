@@ -99,4 +99,8 @@ public class Account {
     public void setAccount_name(String account_name) {
         this.account_name = account_name;
     }
+
+    public void setBalance(Double balance) {
+        this.balance = balance;
+    }
 }

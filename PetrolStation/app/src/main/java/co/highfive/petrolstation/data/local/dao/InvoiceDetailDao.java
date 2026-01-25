@@ -11,6 +11,7 @@ import co.highfive.petrolstation.data.local.entities.InvoiceDetailEntity;
 
 @Dao
 public interface InvoiceDetailDao {
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void upsertAll(List<InvoiceDetailEntity> list);
 
@@ -20,5 +21,6 @@ public interface InvoiceDetailDao {
     @Query("DELETE FROM invoice_details")
     void clear();
 
+    @Query("DELETE FROM invoice_details WHERE invoiceId = :invoiceId")
     void clearForInvoice(int invoiceId);
 }

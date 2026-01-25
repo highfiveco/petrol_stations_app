@@ -20,6 +20,7 @@ import co.highfive.petrolstation.adapters.CustomerVehiclesAdapter;
 import co.highfive.petrolstation.customers.dto.CustomerVehicleDto;
 import co.highfive.petrolstation.customers.dto.CustomerVehiclesResponseDto;
 import co.highfive.petrolstation.customers.dto.VehicleSettingsResponseDto;
+import co.highfive.petrolstation.data.local.entities.CustomersMetaCacheEntity;
 import co.highfive.petrolstation.databinding.ActivityCustomerVehiclesBinding;
 import co.highfive.petrolstation.fragments.AddVehicleDialog;
 import co.highfive.petrolstation.hazemhamadaqa.Http.Constant;
@@ -29,6 +30,16 @@ import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.network.ApiError;
 import co.highfive.petrolstation.network.BaseResponse;
 import co.highfive.petrolstation.network.Endpoints;
+import android.os.Handler;
+import android.os.Looper;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import co.highfive.petrolstation.data.local.AppDatabase;
+import co.highfive.petrolstation.data.local.DatabaseProvider;
+import co.highfive.petrolstation.data.local.entities.CustomerEntity;
+import co.highfive.petrolstation.data.local.entities.CustomerVehicleEntity;
 
 public class CustomerVehiclesActivity extends BaseActivity {
 
@@ -46,11 +57,15 @@ public class CustomerVehiclesActivity extends BaseActivity {
     private boolean canView = true;
     private boolean canAdd = true;
     private boolean canEdit = true;
-    private boolean canDelete = true;
+//    private boolean canDelete = true;
 
     // cached settings
     private VehicleSettingsResponseDto cachedSettings = null;
     private AddVehicleDialog activeDialog = null;
+
+    private AppDatabase db;
+    private ExecutorService dbExecutor;
+    private Handler mainHandler;
 
     // session key for settings json
     private static final String SESSION_KEY_VEHICLE_SETTINGS_JSON = "SESSION_KEY_VEHICLE_SETTINGS_JSON";
@@ -64,6 +79,10 @@ public class CustomerVehiclesActivity extends BaseActivity {
 
         setupUI(binding.mainLayout);
 
+        db = DatabaseProvider.get(this);
+        dbExecutor = Executors.newSingleThreadExecutor();
+        mainHandler = new Handler(Looper.getMainLooper());
+
         readExtras();
         initHeader();
         initRecycler();
@@ -71,8 +90,17 @@ public class CustomerVehiclesActivity extends BaseActivity {
         initClicks();
 
         // load vehicles directly on open
-        fetchVehicles(true);
+        fetchVehiclesSmart(true);
     }
+
+    private void fetchVehiclesSmart(boolean showDialog) {
+        if (connectionAvailable) {
+            fetchVehiclesOnline(showDialog);   // API
+        } else {
+            fetchVehiclesOffline(showDialog);  // Room
+        }
+    }
+
 
     private void readExtras() {
         Bundle extras = getIntent() != null ? getIntent().getExtras() : null;
@@ -124,13 +152,13 @@ public class CustomerVehiclesActivity extends BaseActivity {
     }
 
     private void initRefresh() {
-        binding.swipeRefreshLayout.setOnRefreshListener(() -> fetchVehicles(false));
+        binding.swipeRefreshLayout.setOnRefreshListener(() -> fetchVehiclesSmart(false));
     }
 
     // ============================================================
     // Vehicles List API
     // ============================================================
-    private void fetchVehicles(boolean showDialog) {
+    private void fetchVehiclesOnline(boolean showDialog) {
         if (customerId.trim().isEmpty()) {
             toast(getString(R.string.general_error));
             return;
@@ -166,7 +194,7 @@ public class CustomerVehiclesActivity extends BaseActivity {
                         canView = data.view_customer_vehicles == 1;
                         canAdd = data.add_customer_vehicles == 1;
                         canEdit = data.edit_customer_vehicles == 1;
-                        canDelete = data.delete_customer_vehicles == 1;
+//                        canDelete = data.delete_customer_vehicles == 1;
 
                         binding.icAddWhite.setVisibility(canAdd ? View.VISIBLE : View.GONE);
                         adapter.setCanEdit(canEdit);
@@ -226,6 +254,93 @@ public class CustomerVehiclesActivity extends BaseActivity {
                 }
         );
     }
+
+    private void fetchVehiclesOffline(boolean showDialog) {
+
+        if (customerId.trim().isEmpty()) {
+            toast(getString(R.string.general_error));
+            return;
+        }
+
+        if (showDialog) showProgressHUD();
+        binding.swipeRefreshLayout.setRefreshing(!showDialog);
+
+        final int cid;
+        try {
+            cid = Integer.parseInt(customerId);
+        } catch (Exception e) {
+            if (showDialog) hideProgressHUD();
+            binding.swipeRefreshLayout.setRefreshing(false);
+            toast(getString(R.string.general_error));
+            return;
+        }
+
+        dbExecutor.execute(() -> {
+            // ✅ اقرأ الصلاحيات من meta
+            CustomersMetaCacheEntity meta = db.customersMetaDao().getOne();
+
+            // ✅ اقرأ بيانات الزبون + المركبات
+            List<CustomerVehicleEntity> rows = db.customerVehicleDao().getByCustomer(cid);
+            CustomerEntity customer = db.customerDao().getById(cid);
+
+            ArrayList<CustomerVehicleDto> list = new ArrayList<>();
+            if (rows != null) {
+                for (CustomerVehicleEntity ve : rows) {
+                    list.add(mapVehicleEntityToDto(ve));
+                }
+            }
+
+            mainHandler.post(() -> {
+                if (showDialog) hideProgressHUD();
+                binding.swipeRefreshLayout.setRefreshing(false);
+
+                // ✅ طبّق الصلاحيات
+                applyVehiclePermissionsFromMeta(meta);
+
+                // header من Room
+                if (customer != null) {
+                    String n = safe(customer.name);
+                    String m = safe(customer.mobile);
+
+                    if (!n.isEmpty()) binding.name.setText(n);
+                    if (!m.isEmpty()) binding.phone.setText(m);
+
+                    try {
+                        binding.amount.setText(formatNumber(customer.balance));
+                    } catch (Exception ignored) {
+                        binding.amount.setText("");
+                    }
+                }
+
+                // ✅ لو ما عنده view permission
+                if (!canView) {
+                    adapter.setItems(new ArrayList<>());
+                    toast(getString(R.string.general_error));
+                    return;
+                }
+
+                adapter.setItems(list);
+            });
+        });
+    }
+
+    private CustomerVehicleDto mapVehicleEntityToDto(CustomerVehicleEntity e) {
+        CustomerVehicleDto v = new CustomerVehicleDto();
+        v.id = e.id;
+        v.customer_id = e.customerId;
+        v.vehicle_number = e.vehicleNumber;
+        v.vehicle_type = e.vehicleType;
+        v.vehicle_color = e.vehicleColor;
+        v.model = e.model;
+        v.license_expiry_date = e.licenseExpiryDate;
+        v.notes = e.notes;
+        v.created_at = e.createdAt;
+        v.vehicle_type_name = e.vehicleTypeName;
+        v.vehicle_color_name = e.vehicleColorName;
+        v.account_id = e.accountId;
+        return v;
+    }
+
 
     // ============================================================
     // Settings -> session fallback -> open dialog
@@ -418,7 +533,7 @@ public class CustomerVehiclesActivity extends BaseActivity {
                         hideProgressHUD();
                         if (activeDialog != null) activeDialog.dismissAllowingStateLoss();
                         toast(msg != null && !msg.trim().isEmpty() ? msg : getString(R.string.done));
-                        fetchVehicles(true); // refresh list
+                        fetchVehiclesSmart(true); // refresh list
                     }
 
                     @Override
@@ -472,7 +587,7 @@ public class CustomerVehiclesActivity extends BaseActivity {
                         hideProgressHUD();
                         if (activeDialog != null) activeDialog.dismissAllowingStateLoss();
                         toast(msg != null && !msg.trim().isEmpty() ? msg : getString(R.string.done));
-                        fetchVehicles(true);
+                        fetchVehiclesSmart(true);
                     }
 
                     @Override
@@ -506,6 +621,21 @@ public class CustomerVehiclesActivity extends BaseActivity {
     // ============================================================
     // Utils
     // ============================================================
+
+    private void applyVehiclePermissionsFromMeta(@Nullable CustomersMetaCacheEntity meta) {
+        if (meta == null) {
+            canView = true;   // أو false حسب رغبتك
+            canAdd  = false;
+            canEdit = false;
+        } else {
+            canView = safeInt(meta.viewCustomerVehicles) == 1;
+            canAdd  = safeInt(meta.addCustomerVehicles) == 1;
+            canEdit = safeInt(meta.editCustomerVehicles) == 1;
+        }
+
+        binding.icAddWhite.setVisibility(canAdd ? View.VISIBLE : View.GONE);
+        if (adapter != null) adapter.setCanEdit(canEdit);
+    }
 
 
 

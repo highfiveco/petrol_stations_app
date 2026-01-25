@@ -29,9 +29,9 @@ public class PosInvoiceMappers {
         e.notes = inv.notes;
 
         e.accountJson = inv.account != null ? gson.toJson(inv.account) : null;
-        e.pumpJson = inv.pump != null ? gson.toJson(inv.pump) : null;
-        e.campaignJson = inv.campaign != null ? gson.toJson(inv.campaign) : null;
-        e.customerVehicleJson = inv.customer_vehicle != null ? gson.toJson(inv.customer_vehicle) : null;
+//        e.pumpJson = inv.pump != null ? gson.toJson(inv.pump) : null;
+//        e.campaignJson = inv.campaign != null ? gson.toJson(inv.campaign) : null;
+//        e.customerVehicleJson = inv.customer_vehicle != null ? gson.toJson(inv.customer_vehicle) : null;
 
         e.updatedAt = System.currentTimeMillis();
         return e;

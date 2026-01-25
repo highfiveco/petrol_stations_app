@@ -20,4 +20,7 @@ public interface FuelSalesDao {
 
     @Query("DELETE FROM fuel_sales_list WHERE (:accountId IS NULL OR queryAccountId = :accountId)")
     void clearByAccountFilter(Integer accountId);
+
+    @Query("DELETE FROM fuel_sales_list")
+    void clear();
 }

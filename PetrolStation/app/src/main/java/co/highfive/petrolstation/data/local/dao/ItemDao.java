@@ -23,4 +23,7 @@ public interface ItemDao {
 
     @Query("DELETE FROM items")
     void clear();
+
+    @Query("SELECT * FROM items WHERE id = :id LIMIT 1")
+    ItemEntity getById(int id);
 }

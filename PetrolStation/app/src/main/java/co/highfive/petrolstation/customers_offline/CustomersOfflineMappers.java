@@ -125,9 +125,9 @@ public class CustomersOfflineMappers {
         e.isFuelSale = inv.is_fuel_sale;
         e.createdAt = inv.created_at;
 
-        e.accountJson = inv.account != null ? gson.toJson(inv.account) : null;
-        e.pumpJson = inv.pump != null ? gson.toJson(inv.pump) : null;
-        e.customerVehicleJson = inv.customer_vehicle != null ? gson.toJson(inv.customer_vehicle) : null;
+//        e.accountJson = inv.account != null ? gson.toJson(inv.account) : null;
+//        e.pumpJson = inv.pump != null ? gson.toJson(inv.pump) : null;
+//        e.customerVehicleJson = inv.customer_vehicle != null ? gson.toJson(inv.customer_vehicle) : null;
         return e;
     }
 
@@ -162,7 +162,7 @@ public class CustomersOfflineMappers {
                 e.updateCostPrice = d.update_cost_price;
                 e.count = d.count;
                 e.price = d.price;
-                e.itemJson = d.item != null ? gson.toJson(d.item) : null;
+//                e.itemJson = d.item != null ? gson.toJson(d.item) : null;
 
                 out.add(e);
             }

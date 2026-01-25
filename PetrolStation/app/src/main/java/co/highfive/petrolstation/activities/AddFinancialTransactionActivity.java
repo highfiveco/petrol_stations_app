@@ -95,7 +95,7 @@ public class AddFinancialTransactionActivity extends BaseActivity {
     String currency_id =  null;
     String income_type_id =  null;
     String transaction_type_id =  null;
-    String transaction_month_id =  null;
+//    String transaction_month_id =  null;
 
     String customer_id =  null;
     String account_id =  null;
@@ -568,9 +568,9 @@ public class AddFinancialTransactionActivity extends BaseActivity {
                 if(transaction_type_id == null){
                     return getString(R.string.enter_transaction_type);
                 }
-                if(transaction_month_id == null){
-                    return getString(R.string.enter_transaction_month);
-                }
+//                if(transaction_month_id == null){
+//                    return getString(R.string.enter_transaction_month);
+//                }
 
                 break;
             case 3:
@@ -911,8 +911,8 @@ public class AddFinancialTransactionActivity extends BaseActivity {
                 "currency", safe(currency_id),
                 "account_id", String.valueOf(account.getId()),
                 "notes", safe(notes.getText().toString()),
-                "type_move", safe(transaction_type_id),
-                "month_load", safe(transaction_month_id)
+                "type_move", safe(transaction_type_id)
+//                ,  "month_load", safe(transaction_month_id)
         );
 
         Type type = new TypeToken<BaseResponse<Object>>() {}.getType();
