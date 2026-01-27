@@ -882,6 +882,7 @@ public class PosCheckoutActivity extends BaseActivity {
             req.customerId = customerId;
             req.offlineCustomerLocalId = (customerId < 0) ? Math.abs((long) customerId) : 0;
             req.customerName = customerName;
+            req.customerMobile = customerMobile;
             req.notes = notes;
             req.items = new ArrayList<>(cartItems);
             req.paymentMethods = new ArrayList<>(pms);

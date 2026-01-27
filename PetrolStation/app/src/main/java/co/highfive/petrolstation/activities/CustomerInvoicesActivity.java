@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -70,7 +71,9 @@ public class CustomerInvoicesActivity extends BaseActivity {
     private final ArrayList<InvoiceDto> onlineItems = new ArrayList<>();   // لما تكون Online (مصدرها سيرفر)
     private final ArrayList<InvoiceDto> cachedItems = new ArrayList<>();   // لما تكون Offline (مصدرها DB invoices)
     private final ArrayList<InvoiceDto> displayItems = new ArrayList<>();
-
+    private boolean isOfflineCustomer = false;
+    private long offlineCustomerLocalId = 0;
+    private int customerIdInt = 0;   // بدل String customerId
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,7 +86,7 @@ public class CustomerInvoicesActivity extends BaseActivity {
         db = DatabaseProvider.get(this);
         dbExecutor = Executors.newSingleThreadExecutor();
         mainHandler = new Handler(Looper.getMainLooper());
-        
+
         readExtras();
         initHeader();
         initRecycler();
@@ -117,10 +120,16 @@ public class CustomerInvoicesActivity extends BaseActivity {
             if (isReset) {
 
                 loadPendingOffline(isFuelSale, () -> {
-                    // ✅ اعرض pending مباشرة
                     rebuildDisplayListOfflineMode();
 
-                    // ✅ الآن ابدأ تحميل الكاش
+                    // ✅ إذا الزبون أوفلاين (customerId سالب) ما في invoices cached إله
+                    if (customerIdInt < 0 || isOfflineCustomer) {
+                        currentPage = 1;
+                        hasNextPage = false;
+                        // العرض جاهز (pendingOffline فقط)
+                        return;
+                    }
+
                     fetchInvoicesOffline(showDialog, 1, true);
                 });
             } else {
@@ -133,21 +142,28 @@ public class CustomerInvoicesActivity extends BaseActivity {
 
     private void readExtras() {
         Bundle extras = getIntent() != null ? getIntent().getExtras() : null;
-        if (extras == null) {
-            isCustomerMode = false;
-            return;
-        }
+        if (extras == null) return;
 
-        invoiceType = extras.getInt("invoice_type", 0); // default invoices
-        customerId = safe(extras.getString("id"));
-        if (customerId.trim().isEmpty()) {
-            customerId = safe(extras.getString("customer_id"));
-        }
+        invoiceType = extras.getInt("invoice_type", 0);
+
+        errorLogger("isOfflineCustomer",""+isOfflineCustomer);
+        errorLogger("offlineCustomerLocalId",""+offlineCustomerLocalId);
+        isOfflineCustomer = extras.getBoolean("is_offline_customer", false);
+        offlineCustomerLocalId = extras.getLong("offline_customer_local_id", 0);
+
+        // customer id (could be negative)
+        String cidStr = safe(extras.getString("customer_id"));
+        if (cidStr.trim().isEmpty()) cidStr = safe(extras.getString("id"));
+
+        try { customerIdInt = Integer.parseInt(cidStr); } catch (Exception ignored) { customerIdInt = 0; }
+
+        errorLogger("customerIdInt",""+customerIdInt);
         accountId = safe(extras.getString("account_id"));
         customerName = safe(extras.getString("name"));
         customerMobile = safe(extras.getString("mobile"));
 
-        isCustomerMode = !accountId.trim().isEmpty();
+        // ✅ customer mode لازم يعتمد على customer id مش accountId
+        isCustomerMode = (customerIdInt != 0) || (accountId != null && !accountId.trim().isEmpty());
     }
 
     private void initHeader() {
@@ -173,7 +189,7 @@ public class CustomerInvoicesActivity extends BaseActivity {
     }
 
     private void initRecycler() {
-        adapter = new CustomerInvoicesAdapter(displayItems, new CustomerInvoicesAdapter.Listener() {
+        adapter = new CustomerInvoicesAdapter(this,displayItems, new CustomerInvoicesAdapter.Listener() {
             @Override
             public void onView(InvoiceDto invoice) {
                 openInvoiceDetails(invoice);
@@ -193,6 +209,9 @@ public class CustomerInvoicesActivity extends BaseActivity {
                 }
 
                 printInvoice(setting, invoice);
+            }
+            @Override public void onSend(InvoiceDto invoice) {
+                sendOneOfflineInvoice(invoice); // ✅
             }
         });
 
@@ -221,6 +240,64 @@ public class CustomerInvoicesActivity extends BaseActivity {
         });
     }
 
+    private void sendOneOfflineInvoice(InvoiceDto inv) {
+
+        if (inv == null || !inv.is_offline || inv.local_id <= 0) {
+            toast("هذه الفاتورة ليست أوفلاين");
+            return;
+        }
+
+        if (!connectionAvailable) {
+            toast("لا يوجد إنترنت");
+            return;
+        }
+
+        // ✅ Repo
+        co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository repo =
+                new co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository(
+                        this,
+                        db,
+                        getGson(),
+                        apiClient
+                );
+
+        showProgressHUD();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Handler main = new Handler(Looper.getMainLooper());
+
+        ex.execute(() -> {
+            // ✅ هنا بدك function جديدة بالريبو: syncOneByLocalId(localId, listener)
+            repo.syncOneInvoiceJson(inv.local_id, new co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository.SingleSyncListener() {
+
+                @Override public void onSuccess() {
+                    main.post(() -> {
+                        hideProgressHUD();
+                        toast("تم إرسال الفاتورة");
+                        fetchInvoicesSmart(false, 1, true); // ✅ refresh list
+                    });
+                }
+
+                @Override public void onFailed(@NonNull String errorMsg) {
+                    main.post(() -> {
+                        hideProgressHUD();
+                        toast(errorMsg);
+                        fetchInvoicesSmart(false, 1, true);
+                    });
+                }
+
+                @Override public void onNetwork(@NonNull String reason) {
+                    main.post(() -> {
+                        hideProgressHUD();
+                        toast("مشكلة بالشبكة: " + reason);
+                        fetchInvoicesSmart(false, 1, true);
+                    });
+                }
+            });
+        });
+    }
+
+
     private void rebuildDisplayListOnlineMode(boolean isResetOnline) {
         displayItems.clear();
         displayItems.addAll(pendingOffline);
@@ -245,13 +322,14 @@ public class CustomerInvoicesActivity extends BaseActivity {
             try { if (accountId != null && !accountId.trim().isEmpty()) aid = Integer.parseInt(accountId); }
             catch (Exception ignored) {}
 
-            Integer cid = null;
-            try { if (customerId != null && !customerId.trim().isEmpty()) cid = Integer.parseInt(customerId); }
-            catch (Exception ignored) {}
+            Integer cid = customerIdInt;
+
+//            try { if (customerId != null && !customerId.trim().isEmpty()) cid = Integer.parseInt(customerId); }
+//            catch (Exception ignored) {}
 
             if (aid != null && aid > 0) {
                 rows = db.offlineInvoiceDao().getPendingByAccountAndType(aid, isFuelSale);
-            } else if (cid != null && cid > 0) {
+            } else if (cid != null && cid != 0) {
                 rows = db.offlineInvoiceDao().getPendingByCustomerAndType(cid, isFuelSale);
             } else {
                 rows = db.offlineInvoiceDao().getPendingByType(isFuelSale);
@@ -280,9 +358,7 @@ public class CustomerInvoicesActivity extends BaseActivity {
         dto.sync_status = e.syncStatus;
         dto.sync_error = e.syncError;
 
-        // عشان list و UI
         dto.id = e.onlineId != null ? e.onlineId : 0;
-//        dto.customer_id = e.customerId; // إذا عندك بالحقل، أو تجاهل
         dto.account_id = e.accountId;
 
         dto.statement = e.statement;
@@ -293,12 +369,17 @@ public class CustomerInvoicesActivity extends BaseActivity {
         dto.total = e.total;
         dto.notes = e.notes;
 
-        // date display (بدك شكل لطيف)
         dto.date = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
                 .format(new java.util.Date(e.createdAtTs));
 
+        // ✅ account (name/mobile)
+        if (dto.account == null) dto.account = new co.highfive.petrolstation.models.Account();
+        dto.account.setAccount_name(e.customerName != null ? e.customerName : "");
+        dto.account.setMobile(e.customerMobile != null ? e.customerMobile : "");
+
         return dto;
     }
+
 
     private void initRefresh() {
         binding.swipeRefreshLayout.setOnRefreshListener(() -> fetchInvoicesSmart(false, 1, true));
@@ -426,6 +507,7 @@ public class CustomerInvoicesActivity extends BaseActivity {
         );
     }
 
+
     private void fetchInvoicesOffline(boolean showDialog, int page, boolean isReset) {
         if (isLoading) return;
 
@@ -434,63 +516,122 @@ public class CustomerInvoicesActivity extends BaseActivity {
         binding.swipeRefreshLayout.setRefreshing(!showDialog);
 
         final int offset = (page - 1) * pageSize;
-        int isFuelSale = (invoiceType == 1) ? 1 : 0;
-
+        final int isFuelSale = (invoiceType == 1) ? 1 : 0;
 
         dbExecutor.execute(() -> {
 
-            List<InvoiceEntity> rows;
-            int total;
+            if (customerIdInt < 0 || isOfflineCustomer) {
+                mainHandler.post(() -> {
+                    isLoading = false;
+                    if (showDialog) hideProgressHUD();
+                    binding.swipeRefreshLayout.setRefreshing(false);
 
-            Integer cid = null;
-            try {
-                if (customerId != null && !customerId.trim().isEmpty()) {
-                    cid = Integer.parseInt(customerId);
-                }
-            } catch (Exception ignored) {}
+                    if (isReset) cachedItems.clear();
+                    currentPage = 1;
+                    hasNextPage = false;
 
-            // ✅ الحالة 1: عندنا customerId => فلترة حسب العميل
-            if (cid != null && cid > 0) {
-                rows = db.invoiceDao().getByCustomerAndTypePaged(cid, isFuelSale, pageSize, offset);
-                total = db.invoiceDao().countByCustomerAndType(cid, isFuelSale);
+                    rebuildDisplayListOfflineMode(); // pendingOffline فقط
+                    if (isCustomerMode) binding.amount.setText("0");
+                });
+                return;
             }
-            // ✅ الحالة 2: ما عندنا customerId => جيب الكل مع pagination
-            else {
-                rows = db.invoiceDao().getByTypePaged(isFuelSale, pageSize, offset);
-                total = db.invoiceDao().countByType(isFuelSale);
-            }
+
+            int total = 0;
 
             ArrayList<InvoiceDto> mapped = new ArrayList<>();
-            if (rows != null) {
-                for (InvoiceEntity e : rows) {
-                    mapped.add(mapInvoiceEntityToDto(e));
+
+            Integer cid = customerIdInt;
+//            try {
+//                if (customerId != null && !customerId.trim().isEmpty()) {
+//                    cid = Integer.parseInt(customerId);
+//                }
+//            } catch (Exception ignored) {}
+
+            // ✅ الحالة 1: عندنا customerId
+            if (cid != null && cid != 0) {
+
+                List<co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite> rows =
+                        db.invoiceDao().getByCustomerAndTypePagedWithCustomer(cid, isFuelSale, pageSize, offset);
+
+                total = db.invoiceDao().countByCustomerAndType(cid, isFuelSale);
+
+                if (rows != null) {
+                    for (co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite r : rows) {
+                        mapped.add(mapInvoiceRowToDto(r));
+                    }
+                }
+
+                boolean hasMore = (offset + mapped.size()) < total;
+                final boolean finalHasMore = hasMore;
+
+                // ✅ balance: بس لو customer mode
+                String headerText = "";
+                if (isCustomerMode) {
+
+                    Integer aidExtra = null;
+                    try {
+                        if (accountId != null && !accountId.trim().isEmpty()) {
+                            aidExtra = Integer.parseInt(accountId);
+                        }
+                    } catch (Exception ignored) {}
+
+                    List<InvoiceEntity> invoiceEntities = new ArrayList<>();
+                    if (rows != null) {
+                        for (co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite r : rows) {
+                            if (r != null && r.invoice != null) invoiceEntities.add(r.invoice);
+                        }
+                    }
+
+                    OfflineAccountSummary acc = getOfflineAccountSummary(aidExtra, invoiceEntities);
+
+                    Double headerBalance = null;
+                    try {
+                        if (acc.balance != null) headerBalance = acc.balance;
+                        else if (acc.credit != null && acc.depit != null) headerBalance = acc.credit - acc.depit;
+                    } catch (Exception ignored) {}
+
+                    headerText = (headerBalance != null) ? String.valueOf(headerBalance) : "0";
+                }
+
+                final String finalHeaderText = headerText;
+
+                mainHandler.post(() -> {
+                    isLoading = false;
+                    if (showDialog) hideProgressHUD();
+                    binding.swipeRefreshLayout.setRefreshing(false);
+
+                    if (isReset) {
+                        cachedItems.clear();
+                        cachedItems.addAll(mapped);
+                    } else {
+                        cachedItems.addAll(mapped);
+                    }
+
+                    currentPage = page;
+                    hasNextPage = finalHasMore;
+
+                    rebuildDisplayListOfflineMode();
+
+                    if (isCustomerMode) binding.amount.setText(finalHeaderText);
+                });
+
+                return;
+            }
+
+            // ✅ الحالة 2: ما عندنا customerId => جيب الكل
+            List<co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite> rowsAll =
+                    db.invoiceDao().getByTypePagedWithCustomer(isFuelSale, pageSize, offset);
+
+            total = db.invoiceDao().countByType(isFuelSale);
+
+            if (rowsAll != null) {
+                for (co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite r : rowsAll) {
+                    mapped.add(mapInvoiceRowToDto(r));
                 }
             }
 
             boolean hasMore = (offset + mapped.size()) < total;
-
-            // ✅ balance: بس لو customer mode
-            String headerText = "";
-            if (isCustomerMode) {
-                Integer aidExtra = null;
-                try {
-                    if (accountId != null && !accountId.trim().isEmpty()) {
-                        aidExtra = Integer.parseInt(accountId);
-                    }
-                } catch (Exception ignored) {}
-
-                OfflineAccountSummary acc = getOfflineAccountSummary(aidExtra, rows);
-
-                Double headerBalance = null;
-                try {
-                    if (acc.balance != null) headerBalance = acc.balance;
-                    else if (acc.credit != null && acc.depit != null) headerBalance = acc.credit - acc.depit;
-                } catch (Exception ignored) {}
-
-                headerText = (headerBalance != null) ? String.valueOf(headerBalance) : "0";
-            }
-
-            final String finalHeaderText = headerText;
+            final boolean finalHasMore = hasMore;
 
             mainHandler.post(() -> {
                 isLoading = false;
@@ -500,18 +641,14 @@ public class CustomerInvoicesActivity extends BaseActivity {
                 if (isReset) {
                     cachedItems.clear();
                     cachedItems.addAll(mapped);
-                    currentPage = page;
                 } else {
                     cachedItems.addAll(mapped);
-                    currentPage = page;
                 }
 
-                hasNextPage = hasMore;
+                currentPage = page;
+                hasNextPage = finalHasMore;
 
-                // ✅ rebuild العرض: pending + cached
                 rebuildDisplayListOfflineMode();
-
-                if (isCustomerMode) binding.amount.setText(finalHeaderText);
             });
         });
     }
@@ -646,6 +783,35 @@ public class CustomerInvoicesActivity extends BaseActivity {
         } catch (Exception ignored) {}
 
         return s;
+    }
+
+    private InvoiceDto mapInvoiceRowToDto(co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite r) {
+
+        InvoiceEntity e = r.invoice;
+
+        InvoiceDto dto = new InvoiceDto();
+        dto.id = e.id;
+        dto.date = e.date;
+        dto.statement = e.statement;
+        dto.account_id = e.accountId;
+        dto.store_id = e.storeId;
+        dto.discount = e.discount;
+        dto.total = e.total;
+        dto.invoice_no = e.invoiceNo;
+        dto.notes = e.notes;
+        dto.campaign_id = e.campaignId;
+        dto.pump_id = e.pumpId;
+        dto.customer_vehicle_id = e.customerVehicleId;
+        dto.created_at = e.createdAt;
+        dto.is_fuel_sale = e.isFuelSale;
+
+        // ✅ تعبئة account للعرض في الليست
+        if (dto.account == null) dto.account = new co.highfive.petrolstation.models.Account();
+
+        dto.account.setAccount_name(r.customerName != null ? r.customerName : "");
+        dto.account.setMobile(r.customerMobile != null ? r.customerMobile : "");
+
+        return dto;
     }
 
 

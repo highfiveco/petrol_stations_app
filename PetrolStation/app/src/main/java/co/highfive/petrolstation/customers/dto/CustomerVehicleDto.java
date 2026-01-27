@@ -15,4 +15,10 @@ public class CustomerVehicleDto {
     @SerializedName("vehicle_type_name") public String vehicle_type_name;
     @SerializedName("vehicle_color_name") public String vehicle_color_name;
     @SerializedName("account_id") public Integer account_id;
+
+    public boolean is_offline;
+    public long local_id;
+
+    // optional if you want
+    public long customer_local_id;
 }

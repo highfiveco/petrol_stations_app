@@ -42,6 +42,10 @@ public class CustomerActivity extends BaseActivity {
     private SendSmsDialog sendSmsDialog;
     private UpdatePhoneDialog updatePhoneDialog;
 
+    private boolean isOfflineCustomer = false;
+    private long offlineCustomerLocalId = 0;
+
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -123,7 +127,12 @@ public class CustomerActivity extends BaseActivity {
         Bundle b = getIntent() != null ? getIntent().getExtras() : null;
         if (b == null) return;
 
+        isOfflineCustomer = b.getBoolean("is_offline_customer", false);
+        offlineCustomerLocalId = b.getLong("offline_customer_local_id", 0);
+
         customerId = safe(b.getString("id"));
+        if (customerId.trim().isEmpty()) customerId = safe(b.getString("customer_id"));
+
         accountId = safe(b.getString("account_id"));
         customerName = safe(b.getString("name"));
         customerMobile = safe(b.getString("mobile"));
@@ -435,10 +444,15 @@ public class CustomerActivity extends BaseActivity {
     private Bundle buildCustomerBundle() {
         Bundle b = new Bundle();
         b.putString("id", safe(customerId));
-        b.putString("customer_id", safe(customerId)); // بعض الشاشات تستخدم customer_id
+        b.putString("customer_id", safe(customerId));
         b.putString("account_id", safe(accountId));
         b.putString("name", safe(customerName));
         b.putString("mobile", safe(customerMobile));
+
+        // ✅ offline markers
+        b.putBoolean("is_offline_customer", isOfflineCustomer);
+        b.putLong("offline_customer_local_id", offlineCustomerLocalId);
+
         return b;
     }
 

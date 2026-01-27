@@ -279,6 +279,7 @@ public class AddVehicleDialog extends DialogFragment {
     // =========================
     private void openVehicleTypeDropdown() {
         if (settings == null || settings.vehicle_type == null || settings.vehicle_type.isEmpty()) {
+            Log.e("hazem","null");
             toastLocal(getString(R.string.general_error));
             return;
         }

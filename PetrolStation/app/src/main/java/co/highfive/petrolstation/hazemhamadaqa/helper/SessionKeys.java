@@ -68,6 +68,7 @@ public class SessionKeys {
     public String company_setting_json ;
     public String pos_settings_json ;
     public String fuel_price_settings_json ;
+    public String customer_vehicles_settings_json;
 
     public SessionKeys(){
 
@@ -132,6 +133,7 @@ public class SessionKeys {
          company_setting_json = "company_setting_json";
          pos_settings_json = "pos_settings_json";
          fuel_price_settings_json = "fuel_price_settings_json";
+        customer_vehicles_settings_json = "customer_vehicles_settings_json";
     }
 
 }

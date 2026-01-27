@@ -11,20 +11,23 @@ import java.util.List;
 
 import co.highfive.petrolstation.customers.dto.InvoiceDto;
 import co.highfive.petrolstation.databinding.CustomerInvoicesItemBinding;
+import co.highfive.petrolstation.hazemhamadaqa.activity.BaseActivity;
 
 public class CustomerInvoicesAdapter extends RecyclerView.Adapter<CustomerInvoicesAdapter.VH> {
 
     public interface Listener {
         void onView(InvoiceDto invoice);
         void onPrint(InvoiceDto invoice);
+        void onSend(InvoiceDto invoice);
     }
 
     private final List<InvoiceDto> items;
     private final Listener listener;
 
     private boolean hideCustomerNameInItem = false;
-
-    public CustomerInvoicesAdapter(List<InvoiceDto> items, Listener listener) {
+    BaseActivity baseActivity;
+    public CustomerInvoicesAdapter(BaseActivity baseActivity,List<InvoiceDto> items, Listener listener) {
+        this.baseActivity = baseActivity;
         this.items = items;
         this.listener = listener;
     }
@@ -84,10 +87,10 @@ public class CustomerInvoicesAdapter extends RecyclerView.Adapter<CustomerInvoic
         boolean isFailed  = inv.is_offline && (inv.sync_status == 2);
 
         String no = safe(inv.invoice_no);
-        if (inv.is_offline) {
-            if (inv.sync_status == 0) no += "  •  Pending";
-            else if (inv.sync_status == 2) no += "  •  Failed";
-        }
+//        if (inv.is_offline) {
+//            if (inv.sync_status == 0) no += "  •  Pending";
+//            else if (inv.sync_status == 2) no += "  •  Failed";
+//        }
         h.binding.txtInvoiceNumber.setText(no);
 
         // (اختياري) أخفي زر print للـ pending
@@ -97,19 +100,22 @@ public class CustomerInvoicesAdapter extends RecyclerView.Adapter<CustomerInvoic
         h.binding.printInvoice.setAlpha(canPrint ? 1f : 0.4f);
 
         if (inv.is_offline) {
-            h.binding.txtStatusLayout.setVisibility(View.VISIBLE);
+            h.binding.statusLayout.setVisibility(View.VISIBLE);
 
             if (inv.sync_status == 0) {
-                h.binding.txtStatus.setText("Pending");
+                h.binding.txtStatus.setText("قيد الارسال");
             } else if (inv.sync_status == 2) {
-                h.binding.txtStatus.setText("Failed");
+                h.binding.txtStatus.setText("فشل الارسال");
             } else {
-                h.binding.txtStatus.setText("Offline");
+                h.binding.txtStatus.setText("اوف لاين");
             }
         } else {
-            h.binding.txtStatusLayout.setVisibility(View.GONE);
+            h.binding.statusLayout.setVisibility(View.GONE);
         }
 
+        h.binding.buttonSend.setOnClickListener(v -> {
+            if (listener != null) listener.onSend(inv);
+        });
 
     }
 

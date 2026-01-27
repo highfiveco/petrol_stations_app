@@ -103,4 +103,7 @@ public class Account {
     public void setBalance(Double balance) {
         this.balance = balance;
     }
+    public void setMobile(String mobile) {
+        this.mobile = mobile;
+    }
 }

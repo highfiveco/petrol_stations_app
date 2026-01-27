@@ -29,6 +29,7 @@ import co.highfive.petrolstation.customers.dto.CustomersData;
 import co.highfive.petrolstation.data.local.AppDatabase;
 import co.highfive.petrolstation.data.local.DatabaseProvider;
 import co.highfive.petrolstation.data.local.entities.CustomerEntity;
+import co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity;
 import co.highfive.petrolstation.databinding.ActivityCustomersBinding;
 import co.highfive.petrolstation.fragments.CustomerFilterDialog;
 import co.highfive.petrolstation.hazemhamadaqa.Http.Constant;
@@ -183,13 +184,23 @@ public class CustomersActivity extends BaseActivity {
         setVisible(binding.add, false);
     }
 
-    private Bundle buildCustomerBundle(CustomerDto customerDto) {
+    private Bundle buildCustomerBundle(CustomerDto c) {
         Bundle b = new Bundle();
-        b.putString("id", safe("" + customerDto.id));
-        b.putString("customer_id", safe("" + customerDto.id));
-        b.putString("account_id", safe("" + customerDto.account_id));
-        b.putString("name", safe(customerDto.name));
-        b.putString("mobile", safe(customerDto.mobile));
+
+        b.putString("id", safe("" + c.id));
+        b.putString("customer_id", safe("" + c.id));
+
+        if (c.id < 0) {
+            long localId = -1L * c.id;
+            b.putString("offline_local_id", String.valueOf(localId));
+            b.putBoolean("is_offline", true);
+        } else {
+            b.putBoolean("is_offline", false);
+        }
+
+        b.putString("account_id", safe("" + c.account_id));
+        b.putString("name", safe(c.name));
+        b.putString("mobile", safe(c.mobile));
         return b;
     }
 
@@ -339,26 +350,90 @@ public class CustomersActivity extends BaseActivity {
     // OFFLINE: ROOM ONLY
     // =========================
     private void loadPageFromRoom(int page) {
-        int offset = (page - 1) * pageSize;
+        final int offset = (page - 1) * pageSize;
 
         final String name = trimToNull(filterName);
         final Double balanceVal = parseDoubleOrNull(trimToNull(filterBalance));
 
         dbExecutor.execute(() -> {
-            List<CustomerEntity> rows;
 
-            if (name != null && balanceVal == null) {
-                rows = db.customerDao().searchByNamePaged("%" + name + "%", pageSize, offset);
-            } else if (name == null && balanceVal != null) {
-                rows = db.customerDao().searchByBalanceMinPaged(balanceVal, pageSize, offset);
-            } else {
-                // name + balance موجودين
-                rows = db.customerDao().searchByNameAndBalanceMinPaged("%" + name + "%", balanceVal != null ? balanceVal : 0.0, pageSize, offset);
+            // =============== OFFLINE PART (NO PAGINATION) ===============
+            ArrayList<CustomerDto> offlineMapped = new ArrayList<>();
+
+            // نجيب offline فقط في الصفحة الأولى (عشان ما يتكرروا بكل صفحة)
+            if (page == 1) {
+                try {
+                    List<OfflineCustomerEntity> offlineRows;
+
+                    if (name != null) {
+                        // عندك search(q) جاهزة
+                        offlineRows = db.offlineCustomerDao().search(name);
+                    } else {
+                        // لو ما في name فلتر، ما نعرض offline (لأن شاشتك ممنوع تحميل بدون فلتر)
+                        offlineRows = new ArrayList<>();
+                    }
+
+                    if (offlineRows != null) {
+                        for (OfflineCustomerEntity e : offlineRows) {
+                            offlineMapped.add(mapOfflineToCustomerDto(e));
+                        }
+                    }
+                } catch (Exception ignored) {}
             }
 
-            ArrayList<CustomerDto> mapped = new ArrayList<>();
-            if (rows != null) {
-                for (CustomerEntity e : rows) mapped.add(mapEntityToDto(e));
+            // =============== ONLINE CACHED PART (WITH PAGINATION) ===============
+            int onlineLimit = pageSize;
+            int onlineOffset = offset;
+
+            // إذا page=1 وفي offline موجود → قلل limit من online
+            if (page == 1 && !offlineMapped.isEmpty()) {
+                onlineLimit = Math.max(0, pageSize - offlineMapped.size());
+                onlineOffset = 0;
+            } else if (page > 1) {
+                // الصفحة الأولى أخذت من customers عدد أقل بسبب offline
+                // يعني خصم = (pageSize - onlineLimitInPage1)
+                int onlineUsedInPage1 = Math.max(0, pageSize - (page == 1 ? 0 : offlineMapped.size())); // مش مستخدم هون
+                // الأسهل: احسب كم customer انعرض في الصفحة الأولى فعليًا:
+                int page1OnlineShown = pageSize;
+                if (name != null) {
+                    // لو في offline على الصفحة الأولى، page1OnlineShown تقل
+                    // بس offlineMapped موجود فقط في page==1, هون page>1 لذلك لازم نعيد حسابها:
+                    // نقدر ببساطة نفترض أن page1OnlineShown = max(0, pageSize - offlineCountFirstPage)
+                    // عشان هيك نحتاج offlineCountFirstPage. نحسبه سريعًا بدون mapping كامل:
+                    int offlineCountFirstPage = 0;
+                    try {
+                        if (name != null) {
+                            List<OfflineCustomerEntity> tmp = db.offlineCustomerDao().search(name);
+                            offlineCountFirstPage = (tmp != null) ? tmp.size() : 0;
+                        }
+                    } catch (Exception ignored) {}
+                    page1OnlineShown = Math.max(0, pageSize - offlineCountFirstPage);
+                }
+
+                // الآن offset للـ customers يبدأ بعد page1OnlineShown
+                onlineOffset = page1OnlineShown + (page - 2) * pageSize;
+                onlineLimit = pageSize;
+            }
+
+            List<CustomerEntity> rowsOnline = new ArrayList<>();
+            try {
+                if (onlineLimit > 0) {
+                    if (name != null && balanceVal == null) {
+                        rowsOnline = db.customerDao().searchByNamePaged("%" + name + "%", onlineLimit, onlineOffset);
+                    } else if (name == null && balanceVal != null) {
+                        rowsOnline = db.customerDao().searchByBalanceMinPaged(balanceVal, onlineLimit, onlineOffset);
+                    } else {
+                        rowsOnline = db.customerDao().searchByNameAndBalanceMinPaged("%" + name + "%", balanceVal != null ? balanceVal : 0.0, onlineLimit, onlineOffset);
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            ArrayList<CustomerDto> finalPage = new ArrayList<>();
+
+            if (page == 1 && !offlineMapped.isEmpty()) finalPage.addAll(offlineMapped);
+
+            if (rowsOnline != null) {
+                for (CustomerEntity e : rowsOnline) finalPage.add(mapEntityToDto(e));
             }
 
             mainHandler.post(() -> {
@@ -369,12 +444,12 @@ public class CustomersActivity extends BaseActivity {
 
                 if (page == 1) customers.clear();
 
-                if (!mapped.isEmpty()) {
-                    customers.addAll(mapped);
+                if (!finalPage.isEmpty()) {
+                    customers.addAll(finalPage);
                     adapter.setItems(customers);
 
                     currentPage = page;
-                    hasMore = mapped.size() >= pageSize;
+                    hasMore = finalPage.size() >= pageSize;
                 } else {
                     hasMore = false;
                     adapter.setItems(customers);
@@ -382,6 +457,7 @@ public class CustomersActivity extends BaseActivity {
             });
         });
     }
+
 
     private void endLoadingUi() {
         hideProgressHUD();
@@ -422,4 +498,31 @@ public class CustomersActivity extends BaseActivity {
         String t = s.trim();
         return t.isEmpty() ? null : t;
     }
+
+    private CustomerDto mapOfflineToCustomerDto(OfflineCustomerEntity e) {
+        CustomerDto c = new CustomerDto();
+
+        c.id = (int) (-e.localId);          // ✅ سالب => أوفلاين
+        c.name = e.name;
+        c.mobile = e.mobile;
+
+        c.account_id = 0;                   // لا يوجد
+        c.balance = 0.0;
+        c.remaining_amount = 0.0;
+        c.address = e.address;
+        c.asseal_no = null;
+
+        c.type_customer = null;
+        c.customer_classify = null;
+        c.status = 1;
+
+        c.customer_status = "OFFLINE";
+        c.type_customer_name = "";
+        c.customer_classify_name = "";
+        c.campaign_name = "";
+
+        return c;
+    }
+
+
 }

@@ -10,7 +10,8 @@ import java.util.List;
 import co.highfive.petrolstation.data.local.entities.OfflineInvoiceEntity;
 
 @Dao
-public interface OfflineInvoiceDao {
+public interface
+OfflineInvoiceDao {
 
     @Insert
     long insert(OfflineInvoiceEntity e);
@@ -39,5 +40,6 @@ public interface OfflineInvoiceDao {
 
     @Query("SELECT * FROM offline_invoices WHERE customerId = :customerId AND isFuelSale = :isFuelSale AND syncStatus IN (0,2) ORDER BY createdAtTs DESC")
     List<OfflineInvoiceEntity> getPendingByCustomerAndType(int customerId, int isFuelSale);
+
 
 }

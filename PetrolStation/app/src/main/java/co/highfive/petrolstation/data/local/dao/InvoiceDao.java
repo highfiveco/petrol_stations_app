@@ -133,4 +133,24 @@ public interface InvoiceDao {
     )
     int countUnifiedByCustomer(int customerId, int isFuelSale);
 
+    @Query(
+            "SELECT i.*, c.name AS customer_name, c.mobile AS customer_mobile " +
+                    "FROM invoices i " +
+                    "LEFT JOIN customers c ON c.accountId = i.accountId " +
+                    "WHERE i.isFuelSale = :isFuelSale " +
+                    "ORDER BY i.createdAtTs DESC " +
+                    "LIMIT :limit OFFSET :offset"
+    )
+    List<InvoiceWithCustomerLite> getByTypePagedWithCustomer(int isFuelSale, int limit, int offset);
+
+    @Query(
+            "SELECT i.*, c.name AS customer_name, c.mobile AS customer_mobile " +
+                    "FROM invoices i " +
+                    "LEFT JOIN customers c ON c.accountId = i.accountId " +
+                    "WHERE i.customerId = :customerId AND i.isFuelSale = :isFuelSale " +
+                    "ORDER BY i.createdAtTs DESC " +
+                    "LIMIT :limit OFFSET :offset"
+    )
+    List<InvoiceWithCustomerLite> getByCustomerAndTypePagedWithCustomer(int customerId, int isFuelSale, int limit, int offset);
+
 }

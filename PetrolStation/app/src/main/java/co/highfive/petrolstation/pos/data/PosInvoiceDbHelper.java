@@ -18,7 +18,7 @@ public class PosInvoiceDbHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "pos_local.db";
 
     // ✅ ارفع النسخة
-    private static final int DB_VERSION = 4;
+    private static final int DB_VERSION = 5;
 
     public static final String TBL = "pos_active_invoices";
 

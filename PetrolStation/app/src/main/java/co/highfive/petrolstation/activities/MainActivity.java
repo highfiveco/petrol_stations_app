@@ -14,6 +14,7 @@ import java.util.Map;
 import co.highfive.petrolstation.R;
 import co.highfive.petrolstation.adapters.MainAdapter;
 import co.highfive.petrolstation.customers.dto.InvoiceDetailDto;
+import co.highfive.petrolstation.customers.dto.VehicleSettingsResponseDto;
 import co.highfive.petrolstation.data.local.entities.AccountEntity;
 import co.highfive.petrolstation.data.local.entities.CampaignEntity;
 import co.highfive.petrolstation.data.local.entities.InvoiceEntity;
@@ -65,6 +66,7 @@ import co.highfive.petrolstation.network.RefreshDataResponseData;
 import co.highfive.petrolstation.customers.dto.CustomerDto;
 import co.highfive.petrolstation.customers.dto.CustomerVehicleDto;
 import co.highfive.petrolstation.customers.dto.InvoiceDto;
+import co.highfive.petrolstation.vehicles.dto.CustomerVehiclesSettingsData;
 
 public class MainActivity extends BaseActivity {
 
@@ -399,6 +401,56 @@ public class MainActivity extends BaseActivity {
                         getSessionManager().setString(getSessionKeys().fuel_price_settings_json, rawJson);
 
                         mainHandler.post(() -> {
+//                            refreshDialog.changeUpdateCompanySetting(true);
+
+                            requestCustomerVehiclesSettings();
+                        });
+                    }
+
+                    @Override public void onError(ApiError error) {
+                        // refreshDialog.changeUpdateFuelSettings(false);
+                        finishRefresh();
+                    }
+
+                    @Override public void onUnauthorized(String rawJson) { logout(); }
+
+                    @Override public void onNetworkError(String reason) {
+                        // refreshDialog.changeUpdateFuelSettings(false);
+                        finishRefresh();
+                    }
+
+                    @Override public void onParseError(String rawJson, Exception e) {
+                        // refreshDialog.changeUpdateFuelSettings(false);
+                        finishRefresh();
+                    }
+                }
+        );
+    }
+
+    private void requestCustomerVehiclesSettings() {
+        // refreshDialog.showUpdateFuelSettings();
+
+        Type type = new TypeToken<BaseResponse<VehicleSettingsResponseDto>>() {}.getType();
+
+        apiClient.request(
+                Constant.REQUEST_GET,
+                Endpoints.CUSTOMER_VEHICLES_SETTINGS,
+                (ApiClient.ApiParams) null,
+                null,
+                type,
+                0,
+                new ApiCallback<VehicleSettingsResponseDto>() {
+
+                    @Override
+                    public void onSuccess(VehicleSettingsResponseDto data, String message, String rawJson) {
+
+                        errorLogger("rawJson",""+rawJson);
+                        errorLogger("data_model",""+data.model.size());
+                        errorLogger("data_vehicle_color",""+data.vehicle_color.size());
+                        // خزّن في Session
+                        getSessionManager().setString(getSessionKeys().customer_vehicles_settings_json, rawJson);
+
+                        mainHandler.post(() -> {
                             refreshDialog.changeUpdateCompanySetting(true);
 
                             requestCustomersOfflineAllPages();
@@ -424,9 +476,6 @@ public class MainActivity extends BaseActivity {
                 }
         );
     }
-
-
-
 
     private void requestCustomersOfflineAllPages() {
         if (refreshDialog != null && refreshDialog.isAdded()) {

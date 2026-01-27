@@ -79,6 +79,7 @@ import co.highfive.petrolstation.activities.MainActivity;
 import co.highfive.petrolstation.activities.SplashActivity;
 import co.highfive.petrolstation.customers.dto.InvoiceDetailDto;
 import co.highfive.petrolstation.customers.dto.InvoiceDto;
+import co.highfive.petrolstation.customers.dto.VehicleSettingsResponseDto;
 import co.highfive.petrolstation.fragments.UpdateAppDialog;
 import co.highfive.petrolstation.fuelsale.dto.FuelPriceSettingsData;
 import co.highfive.petrolstation.hazemhamadaqa.Http.HttpRequest.RequestAsyncTask;
@@ -107,6 +108,7 @@ import co.highfive.petrolstation.pos.dto.PosSettingsData;
 import co.highfive.petrolstation.utils.BluetoothUtil;
 import co.highfive.petrolstation.utils.ESCUtil;
 import co.highfive.petrolstation.utils.SunmiPrintHelper;
+import co.highfive.petrolstation.vehicles.dto.CustomerVehiclesSettingsData;
 
 
 /**
@@ -2010,6 +2012,23 @@ public class BaseActivity extends AppCompatActivity implements Constant {
             BaseResponse<FuelPriceSettingsData> resp = getGson().fromJson(raw, type);
             return resp != null ? resp.data : null;
         } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public VehicleSettingsResponseDto getCustomerVehiclesSettingsFromSession() {
+        try {
+            String raw = getSessionManager().getString(getSessionKeys().customer_vehicles_settings_json);
+            if (raw == null || raw.trim().isEmpty()) return null;
+
+            errorLogger("raw1",""+raw);
+
+            Type type = new TypeToken<BaseResponse<VehicleSettingsResponseDto>>() {}.getType();
+            BaseResponse<VehicleSettingsResponseDto> resp = getGson().fromJson(raw, type);
+          Log.e("resp_vehicle_type",""+resp.data.vehicle_type.size());
+            return resp != null ? resp.data : null;
+        } catch (Exception e) {
+            Log.e("Exception",""+e.getMessage());
             return null;
         }
     }

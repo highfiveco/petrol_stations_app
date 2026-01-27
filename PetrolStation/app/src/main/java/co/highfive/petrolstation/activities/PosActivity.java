@@ -791,6 +791,8 @@ public class PosActivity extends BaseActivity {
 
     private void insertOfflineCustomerAndSelect(String name, String mobile) {
 
+        errorLogger("name",""+name);
+        errorLogger("mobile",""+mobile);
         showProgressHUD();
 
         dbExecutor.execute(() -> {
@@ -838,6 +840,7 @@ public class PosActivity extends BaseActivity {
 
                     lastCustomerSearch = name;
                     lastCustomerResults = new ArrayList<>();
+                    errorLogger(" dto.mobile",""+ dto.mobile);
                     lastCustomerResults.add(dto);
                 });
 
@@ -1184,11 +1187,12 @@ public class PosActivity extends BaseActivity {
             int customerKey = getCustomerKeyForPosDb(selectedCustomer);
             String mobile = (selectedCustomer.mobile != null) ? selectedCustomer.mobile : "";
 
+            errorLogger("mobile",""+mobile);
             if (mobile.trim().isEmpty() && editingInvoiceId > 0) {
                 PosActiveInvoice inv = posDb.getInvoice(editingInvoiceId);
                 if (inv != null && inv.customerMobile != null) mobile = inv.customerMobile;
             }
-
+            errorLogger("mobile",""+mobile);
             if (editingInvoiceId > 0) {
 
 

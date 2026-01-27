@@ -21,9 +21,17 @@ public class OfflineInvoiceEntity {
     public Integer onlineId; // after sync, nullable
 
     public int customerId;
+    public String customerName;
+    public String customerMobile;
     public Integer accountId;
 
     public Integer customerVehicleId;
+    public String vehicleNumber;
+    public String vehicleModel;
+    public String vehicleNotes;
+    public Integer vehicleType;
+    public String licenseExpiryDate;
+    public Integer vehicleColor;
     public Integer pumpId;
     public Integer campaignId;
 

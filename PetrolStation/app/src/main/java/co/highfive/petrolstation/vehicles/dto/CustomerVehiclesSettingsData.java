@@ -14,6 +14,9 @@ public class CustomerVehiclesSettingsData {
     @SerializedName("vehicle_color")
     public List<LookupDto> vehicle_color;
 
+    @SerializedName("model")
+    public List<LookupDto> model;
+
     @SerializedName("setting")
     public SettingDto setting;
 }

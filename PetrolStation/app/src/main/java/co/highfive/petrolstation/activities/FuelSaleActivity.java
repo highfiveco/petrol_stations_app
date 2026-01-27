@@ -27,10 +27,13 @@ import co.highfive.petrolstation.R;
 import co.highfive.petrolstation.adapters.FuelItemsAdapter;
 import co.highfive.petrolstation.adapters.PumpsAdapter;
 import co.highfive.petrolstation.customers.dto.CustomerVehicleDto;
+import co.highfive.petrolstation.customers.dto.VehicleSettingsResponseDto;
 import co.highfive.petrolstation.customers_settings.dto.LookupDto;
 import co.highfive.petrolstation.data.local.AppDatabase;
 import co.highfive.petrolstation.data.local.DatabaseProvider;
+import co.highfive.petrolstation.data.local.entities.CustomerEntity;
 import co.highfive.petrolstation.data.local.entities.CustomerVehicleEntity;
+import co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity;
 import co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository;
 import co.highfive.petrolstation.databinding.ActivityFuelSaleBinding;
 import co.highfive.petrolstation.fragments.AddCustomerDialog;
@@ -51,6 +54,7 @@ import co.highfive.petrolstation.network.ApiCallback;
 import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.network.BaseResponse;
 import co.highfive.petrolstation.network.Endpoints;
+import co.highfive.petrolstation.vehicles.dto.CustomerVehiclesSettingsData;
 
 public class FuelSaleActivity extends BaseActivity {
 
@@ -380,7 +384,7 @@ public class FuelSaleActivity extends BaseActivity {
         binding.addVehicle.setOnClickListener(v -> openAddVehicleDialog());
         binding.campaignContainer.setOnClickListener(v -> openSelectCampaignDialog());
         binding.icAddNewInvoice.setOnClickListener(v -> {
-            if (selectedCustomer == null || selectedCustomer.id <= 0) {
+            if (!isValidSelectedCustomerForFuelSale()) {
                 toast("اختار الزبون أولاً");
                 return;
             }
@@ -499,7 +503,7 @@ public class FuelSaleActivity extends BaseActivity {
 
     private void saveOfflineActiveInvoice(FuelPriceAddRequest req) {
 
-        if (req == null || req.customerId == null || req.customerId <= 0) {
+        if (!isValidSelectedCustomerForFuelSale()) {
             toast("اختار الزبون أولاً");
             return;
         }
@@ -509,14 +513,14 @@ public class FuelSaleActivity extends BaseActivity {
         String invoiceNoPlaceholder = "OFF-" + System.currentTimeMillis();
 
         InvoiceLocalRepository repo = new InvoiceLocalRepository(
-                this,
-                db,
-                getGson(),
-                apiClient
+                this, db, getGson(), apiClient
         );
 
+        FuelCustomerDto customer = selectedCustomer;
+        CustomerVehicleDto vehicle = selectedVehicle;
+
         dbExecutor.execute(() -> {
-            repo.saveFuelSaleOffline(req, statement, total, invoiceNoPlaceholder);
+            repo.saveFuelSaleOffline(req, customer, vehicle, statement, total, invoiceNoPlaceholder);
 
             mainHandler.post(() -> {
                 toast("تم حفظ الفاتورة محليًا وسيتم إرسالها عند توفر الإنترنت");
@@ -604,14 +608,14 @@ public class FuelSaleActivity extends BaseActivity {
     private FuelPriceAddRequest buildCurrentRequestFromUI() {
 
         FuelPriceAddRequest r = new FuelPriceAddRequest();
-        
+
         r.accountId = selectedCustomer != null ? selectedCustomer.account_id : null;
 
         // item_id[] , price[] , count[]
         r.itemIds = new ArrayList<>();
         r.prices  = new ArrayList<>();
         r.counts  = new ArrayList<>();
-        r.customerId = (selectedCustomer != null && selectedCustomer.id > 0) ? selectedCustomer.id : null;
+        r.customerId = (selectedCustomer != null  ) ? selectedCustomer.id : null;
 
         if (selectedItem != null && selectedItem.id > 0) {
             r.itemIds.add(selectedItem.id);
@@ -635,7 +639,7 @@ public class FuelSaleActivity extends BaseActivity {
 
         // account_id
         // إذا عندك selectedCustomer.account_id استخدمه
-        r.accountId = selectedCustomer != null ? selectedCustomer.account_id : null;
+//        r.accountId = selectedCustomer != null ? selectedCustomer.account_id : null;
 
         // customer_vehicle_id
         r.customerVehicleId = (selectedVehicle != null && selectedVehicle.id > 0) ? selectedVehicle.id : null;
@@ -718,7 +722,7 @@ public class FuelSaleActivity extends BaseActivity {
 
     private void saveCurrentInvoiceAsDraft() {
 
-        if (selectedCustomer == null || selectedCustomer.id <= 0) {
+        if (!isValidSelectedCustomerForFuelSale()) {
             toast("اختار الزبون أولاً");
             return;
         }
@@ -1105,12 +1109,25 @@ public class FuelSaleActivity extends BaseActivity {
 
     private void openAddVehicleDialog() {
 
-        if (selectedCustomer == null || selectedCustomer.id <= 0) {
+        if (!isValidSelectedCustomerForFuelSale()) {
             toast("اختار زبون أولاً");
             return;
         }
 
-        fetchVehicleSettingsThenOpenDialog(null); // null => add mode
+        if (!connectionAvailable) {
+            if (cachedVehicleSettings == null) {
+
+                cachedVehicleSettings = getCustomerVehiclesSettingsFromSession();
+                if (cachedVehicleSettings == null) {
+                    toast(getString(R.string.general_error));
+                    return;
+                }
+            }
+            openAddEditVehicleDialog(null, cachedVehicleSettings);
+            return;
+        }
+
+        fetchVehicleSettingsThenOpenDialog(null);
     }
 
     private void fetchVehicleSettingsThenOpenDialog(@Nullable CustomerVehicleDto editVehicle) {
@@ -1186,6 +1203,14 @@ public class FuelSaleActivity extends BaseActivity {
     private void openAddEditVehicleDialog(@Nullable CustomerVehicleDto editVehicle,
                                           @NonNull co.highfive.petrolstation.customers.dto.VehicleSettingsResponseDto settings) {
 
+        if(settings != null ){
+            errorLogger("settings","not null");
+            if(settings.vehicle_type != null ){
+                errorLogger("settings.vehicle_type",""+settings.vehicle_type.size());
+            }
+        }else{
+            errorLogger("settings","not");
+        }
         activeVehicleDialog = AddVehicleDialog.newInstance(
                 String.valueOf(selectedCustomer.id), // ✅ customerId
                 editVehicle,                          // null => add
@@ -1218,6 +1243,13 @@ public class FuelSaleActivity extends BaseActivity {
             toast(getString(R.string.general_error));
             return;
         }
+
+        // ✅ OFFLINE
+        if (!connectionAvailable) {
+            saveVehicleOfflineAndSelect(payload);
+            return;
+        }
+
 
         showProgressHUD();
 
@@ -1287,6 +1319,158 @@ public class FuelSaleActivity extends BaseActivity {
         );
     }
 
+    private void saveVehicleOfflineAndSelect(@NonNull java.util.Map<String, String> payload) {
+
+        if (!isValidSelectedCustomerForFuelSale()) {
+            toast("اختار زبون أولاً");
+            return;
+        }
+
+        showProgressHUD();
+
+        dbExecutor.execute(() -> {
+            try {
+                long now = System.currentTimeMillis();
+
+                co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity e =
+                        new co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity();
+
+                e.customerId = safeInt(payload.get("customer_id"));
+                if (e.customerId <= 0 && selectedCustomer != null) {
+                    e.customerId = selectedCustomer.id;
+                }
+
+                e.vehicleNumber = safe(payload.get("vehicle_number"));
+                e.model = safe(payload.get("model"));
+                e.licenseExpiryDate = safe(payload.get("license_expiry_date"));
+                e.notes = safe(payload.get("notes"));
+
+                e.vehicleType = safeInt(payload.get("vehicle_type"));
+                e.vehicleColor = safeInt(payload.get("vehicle_color"));
+
+                // أسماء العرض لو موجودة (اختياري)
+//                e.vehicleTypeName = safe(payload.get("vehicle_type_name"));
+//                e.vehicleColorName = safe(payload.get("vehicle_color_name"));
+
+                try {
+                    if (cachedVehicleSettings != null) {
+                        e.vehicleTypeName = resolveSimpleSettingName(
+                                cachedVehicleSettings.vehicle_type, e.vehicleType
+                        );
+                        e.vehicleColorName = resolveSimpleSettingName(
+                                cachedVehicleSettings.vehicle_color, e.vehicleColor
+                        );
+                    }
+                } catch (Exception ignored) {}
+
+                e.syncStatus = 0;
+                e.syncError = null;
+                e.createdAtTs = now;
+                e.updatedAtTs = now;
+
+                e.requestJson = null;
+
+                long localId = db.offlineCustomerVehicleDao().insert(e);
+//                e.accountId = (selectedCustomer != null && selectedCustomer.account_id != null)
+//                        ? selectedCustomer.account_id
+//                        : 0;
+                e.localId = localId;
+                e.requestJson = buildOfflineVehicleRequestJson(e, payload);
+                db.offlineCustomerVehicleDao().update(e);
+
+                // ✅ ارجعها كـ DTO "وهمية" مثل offline customer (id سالب)
+                CustomerVehicleDto dto = new CustomerVehicleDto();
+                dto.id = (int) (-localId); // مهم: ID سالب للتمييز
+                dto.customer_id = e.customerId;
+//                dto.account_id = e.accountId;
+                e.accountId = selectedCustomer != null ? selectedCustomer.account_id : 0;
+
+                dto.vehicle_number = e.vehicleNumber;
+                dto.vehicle_type = e.vehicleType;
+                dto.vehicle_color = e.vehicleColor;
+                dto.model = e.model;
+                dto.license_expiry_date = e.licenseExpiryDate;
+                dto.notes = e.notes;
+
+                try {
+                    if (cachedVehicleSettings != null) {
+                        dto.vehicle_type_name = resolveSimpleSettingName(
+                                cachedVehicleSettings.vehicle_type, dto.vehicle_type
+                        );
+                        dto.vehicle_color_name = resolveSimpleSettingName(
+                                cachedVehicleSettings.vehicle_color, dto.vehicle_color
+                        );
+                    }
+                } catch (Exception ignored) {}
+
+                mainHandler.post(() -> {
+                    hideProgressHUD();
+
+                    if (activeVehicleDialog != null) {
+                        activeVehicleDialog.dismissAllowingStateLoss();
+                        activeVehicleDialog = null;
+                    }
+
+                    toast("تم حفظ المركبة (أوفلاين)");
+
+                    selectedVehicle = dto;
+                    binding.vehicle.setText(buildVehicleDisplayText(dto));
+
+                    if (lastVehicleResults == null) lastVehicleResults = new ArrayList<>();
+                    removeVehicleIfExists(lastVehicleResults, dto.id);
+                    lastVehicleResults.add(0, dto);
+                    lastVehiclesCustomerId = selectedCustomer.id;
+                });
+
+            } catch (Exception ex) {
+                mainHandler.post(() -> {
+                    hideProgressHUD();
+                    toast(getString(R.string.general_error));
+                });
+            }
+        });
+    }
+
+    private String resolveSimpleSettingName(java.util.List<co.highfive.petrolstation.customers.dto.SimpleSettingDto> list, Integer id) {
+        if (list == null || id == null) return "";
+        for (co.highfive.petrolstation.customers.dto.SimpleSettingDto s : list) {
+            if (s != null && s.id == id) return s.name != null ? s.name : "";
+        }
+        return "";
+    }
+
+
+
+    private int safeInt(String s) {
+        try {
+            if (s == null) return 0;
+            s = s.trim();
+            if (s.isEmpty()) return 0;
+            return Integer.parseInt(s);
+        } catch (Exception ignored) {
+            return 0;
+        }
+    }
+
+    private String buildOfflineVehicleRequestJson(
+            co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity e,
+            java.util.Map<String, String> payload
+    ) {
+        try {
+            java.util.Map<String, Object> root = new java.util.HashMap<>();
+            root.put("local_id", e.localId);
+            root.put("customer_id", e.customerId);
+
+            // خزّن payload كما هو (أفضل لأنه هو نفس اللي كنت سترسله للـ API)
+            root.put("payload", payload);
+
+            return getGson().toJson(root);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+
     private void removeVehicleIfExists(ArrayList<CustomerVehicleDto> list, int id) {
         if (list == null) return;
         for (int i = 0; i < list.size(); i++) {
@@ -1300,35 +1484,53 @@ public class FuelSaleActivity extends BaseActivity {
 
     private void openSelectVehicleDialog() {
 
-        if (selectedCustomer == null || selectedCustomer.id <= 0) {
+        if (!isValidSelectedCustomerForFuelSale()) {
             toast("اختار زبون أولاً");
             return;
         }
 
         // ✅ OFFLINE: load vehicles from ROOM
+        // ✅ OFFLINE: load vehicles from ROOM (online table + offline table)
         if (!connectionAvailable) {
 
             showProgressHUD();
 
-            int customerId = selectedCustomer.id;
+//            int customerId = selectedCustomer.id > 0 ? selectedCustomer.id : 0;
+            int customerId = selectedCustomer.id; // خليه كما هو (موجب أو سالب)
 
             dbExecutor.execute(() -> {
-                List<CustomerVehicleEntity> rows = new ArrayList<>();
+
+                List<CustomerVehicleEntity> rowsOnline = new ArrayList<>();
+                List<co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity> rowsOffline = new ArrayList<>();
+
                 try {
-                    rows = db.customerVehicleDao().getByCustomerId(customerId);
+                    rowsOnline = db.customerVehicleDao().getByCustomerId(customerId);
                 } catch (Exception e) {
-                    errorLogger("OfflineVehicles", e.getMessage() == null ? "null" : e.getMessage());
+                    errorLogger("OfflineVehiclesOnline", e.getMessage() == null ? "null" : e.getMessage());
                 }
 
-                ArrayList<CustomerVehicleDto> dtoList = mapVehiclesEntitiesToDto(rows);
+                try {
+                    rowsOffline = db.offlineCustomerVehicleDao().getPendingByCustomer(customerId);
+                } catch (Exception e) {
+                    errorLogger("OfflineVehiclesOffline", e.getMessage() == null ? "null" : e.getMessage());
+                }
 
+                ArrayList<CustomerVehicleDto> dtoList = new ArrayList<>();
+
+                // 1) online vehicles
+                dtoList.addAll(mapVehiclesEntitiesToDto(rowsOnline));
+
+                // 2) offline vehicles (id سالب)
+                dtoList.addAll(mapOfflineVehiclesEntitiesToDto(rowsOffline));
+
+                errorLogger("dtoList",""+dtoList.size());
                 mainHandler.post(() -> {
                     hideProgressHUD();
 
-                    // update cache
                     lastVehiclesCustomerId = customerId;
                     lastVehicleResults = dtoList;
 
+                    errorLogger("lastVehiclesCustomerId",""+lastVehiclesCustomerId);
                     openVehicleDialogWithCache(dtoList);
                 });
             });
@@ -1342,6 +1544,38 @@ public class FuelSaleActivity extends BaseActivity {
 
         openVehicleDialogWithCache(cache);
     }
+
+    @NonNull
+    private ArrayList<CustomerVehicleDto> mapOfflineVehiclesEntitiesToDto(
+            @NonNull List<co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity> rows
+    ) {
+        ArrayList<CustomerVehicleDto> out = new ArrayList<>();
+
+        for (co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity e : rows) {
+            if (e == null) continue;
+
+            CustomerVehicleDto d = new CustomerVehicleDto();
+            d.id = (int) (-e.localId); // سالب
+            d.customer_id = e.customerId;
+            d.account_id = e.accountId;
+
+            d.vehicle_number = e.vehicleNumber;
+            d.vehicle_type = e.vehicleType;
+            d.vehicle_color = e.vehicleColor;
+            d.model = e.model;
+            d.license_expiry_date = e.licenseExpiryDate;
+            d.notes = e.notes;
+
+            d.vehicle_type_name = e.vehicleTypeName;
+            d.vehicle_color_name = e.vehicleColorName;
+
+            out.add(d);
+        }
+
+        return out;
+    }
+
+
 
     private void openVehicleDialogWithCache(ArrayList<CustomerVehicleDto> cache) {
 
@@ -1403,6 +1637,11 @@ public class FuelSaleActivity extends BaseActivity {
     }
 
     private void submitAddCustomer(String name, String mobile) {
+
+        if (!connectionAvailable) {
+            saveCustomerOfflineAndSelect(name, mobile);
+            return;
+        }
 
         showProgressHUD();
 
@@ -1478,6 +1717,187 @@ public class FuelSaleActivity extends BaseActivity {
         );
     }
 
+    private void saveCustomerOfflineAndSelect(String name, String mobile) {
+        String n = name == null ? "" : name.trim();
+        String m = mobile == null ? "" : mobile.trim();
+
+        if (n.isEmpty()) {
+            toast(getString(R.string.enter_name));
+            return;
+        }
+        if (m.isEmpty()) {
+            toast("أدخل رقم الجوال");
+            return;
+        }
+
+        // ✅ لو Offline: خزّن في Room offline_customers بدل API
+        if (!connectionAvailable) {
+
+            String mobileNorm = normalizeMobile(m);
+
+            showProgressHUD();
+
+            dbExecutor.execute(() -> {
+
+                try {
+                    // 1) افحص customers الأساسيين (اللي من MainActivity)
+                    CustomerEntity existsMain = null;
+                    try {
+                        existsMain = db.customerDao().getByMobileExact(m);
+                        if (existsMain == null && mobileNorm != null && !mobileNorm.isEmpty()) {
+                            existsMain = db.customerDao().getByMobileNormalizedLoose(mobileNorm);
+                        }
+                    } catch (Exception ignored) {}
+
+                    // 2) افحص داخل offline_customers نفسه (منع تكرار أوفلاين)
+                    co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity existsOffline = null;
+                    try {
+                        existsOffline = db.offlineCustomerDao().getByMobileNormalized(mobileNorm);
+                    } catch (Exception ignored) {}
+
+                    final boolean hasDuplicateMain = (existsMain != null);
+                    final boolean hasDuplicateOffline = (existsOffline != null);
+
+                    mainHandler.post(() -> {
+                        hideProgressHUD();
+
+                        // إذا موجود بالفعل في offline_customers → امنع (أفضل)
+                        if (hasDuplicateOffline) {
+                            toast("هذا الرقم تم إضافته مسبقًا (أوفلاين).");
+                            return;
+                        }
+
+                        if (hasDuplicateMain) {
+                            showConfirmDuplicateMobileDialog(m, () -> insertOfflineCustomerAndSelect(n, m));
+                        } else {
+                            insertOfflineCustomerAndSelect(n, m);
+                        }
+                    });
+
+                } catch (Exception e) {
+                    mainHandler.post(() -> {
+                        hideProgressHUD();
+                        toast(getString(R.string.general_error));
+                    });
+                }
+            });
+
+            return;
+        }
+    }
+    private boolean isValidSelectedCustomerForFuelSale() {
+        if (selectedCustomer == null) return false;
+        if (selectedCustomer.id > 0) return true; // online
+        return selectedCustomer.is_offline && selectedCustomer.local_id > 0 && selectedCustomer.id < 0; // offline
+    }
+
+    private void insertOfflineCustomerAndSelect(String name, String mobile) {
+
+        errorLogger("name",""+name);
+        errorLogger("mobile",""+mobile);
+        showProgressHUD();
+
+        dbExecutor.execute(() -> {
+            try {
+                long now = System.currentTimeMillis();
+
+                co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity e =
+                        new co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity();
+
+                e.name = name;
+                e.mobile = mobile;
+                e.mobileNormalized = normalizeMobile(mobile);
+                e.syncStatus = 0; // pending
+                e.syncError = null;
+                e.createdAtTs = now;
+                e.updatedAtTs = now;
+
+                // payload للمستقبل (sync)
+                // بنخزن object بسيط: name/mobile/local_id لاحقاً بعد insert
+                e.requestJson = null;
+
+                long localId = db.offlineCustomerDao().insert(e);
+
+                // بعد insert نحدّث requestJson لأنه صار عندنا localId
+                e.localId = localId;
+                e.requestJson = buildOfflineCustomerRequestJson(e);
+                db.offlineCustomerDao().update(e);
+
+                FuelCustomerDto dto = new FuelCustomerDto();
+                int fakeId = (localId > Integer.MAX_VALUE) ? -1 : (int) (-localId);
+                dto.id = fakeId;
+                dto.name = name;
+                dto.mobile = mobile;
+
+                // ✅ نضيف flags (لازم نضيفها للـ DTO إذا مش موجودة)
+                dto.is_offline = true;
+                dto.local_id = localId;
+
+                mainHandler.post(() -> {
+                    hideProgressHUD();
+
+                    toast("تم حفظ الزبون (أوفلاين)");
+
+                    applySelectedCustomer(dto);
+
+                    lastCustomerSearch = name;
+                    lastCustomerResults = new ArrayList<>();
+                    errorLogger(" dto.mobile",""+ dto.mobile);
+                    lastCustomerResults.add(dto);
+                });
+
+            } catch (Exception ex) {
+                mainHandler.post(() -> {
+                    hideProgressHUD();
+                    toast(getString(R.string.general_error));
+                });
+            }
+        });
+    }
+
+    private String buildOfflineCustomerRequestJson(co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity e) {
+        try {
+            java.util.Map<String, Object> customer = new java.util.HashMap<>();
+            customer.put("local_id", e.localId);
+            customer.put("name", e.name);
+            customer.put("mobile", e.mobile);
+            // اختياري:
+            if (e.address != null) customer.put("address", e.address);
+            if (e.notes != null) customer.put("notes", e.notes);
+
+            java.util.Map<String, Object> root = new java.util.HashMap<>();
+            root.put("customer", customer);
+
+            return getGson().toJson(root);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private void showConfirmDuplicateMobileDialog(
+            String mobile,
+            Runnable onProceed
+    ) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("تنبيه")
+                .setMessage("رقم الجوال موجود مسبقًا (" + mobile + "). هل أنت متأكد أنك تريد إنشاء زبون جديد بنفس الرقم؟")
+                .setPositiveButton("نعم، أضف", (d, w) -> {
+                    d.dismiss();
+                    if (onProceed != null) onProceed.run();
+                })
+                .setNegativeButton("إلغاء", (d, w) -> d.dismiss())
+                .show();
+    }
+
+
+    private String normalizeMobile(String mobile) {
+        if (mobile == null) return "";
+        String m = mobile.trim();
+        m = m.replace(" ", "").replace("-", "").replace("+", "");
+        // لو بدك تشيل 00
+        if (m.startsWith("00")) m = m.substring(2);
+        return m;
+    }
 
     private void applySelectedCustomer(FuelCustomerDto customer) {
 
@@ -1486,7 +1906,12 @@ public class FuelSaleActivity extends BaseActivity {
         binding.campaign.setText(getString(R.string.select_campaign));
         hideCampaign();
 
-        if (customer == null || customer.id <= 0) return;
+        if (customer == null) return;
+
+        boolean validOnline  = customer.id > 0;
+        boolean validOffline = customer.is_offline && customer.local_id > 0 && customer.id < 0;
+
+        if (!validOnline && !validOffline) return;
 
         boolean customerChanged = (selectedCustomer == null || selectedCustomer.id != customer.id);
 
@@ -1494,14 +1919,13 @@ public class FuelSaleActivity extends BaseActivity {
         binding.typeCustomer.setText(customer.name != null ? customer.name : "");
 
         if (customerChanged) {
-            // ✅ reset vehicle selection + vehicle cache
             selectedVehicle = null;
             lastVehicleResults = new ArrayList<>();
             lastVehiclesCustomerId = 0;
-
             binding.vehicle.setText(getString(R.string.select_vehicle));
         }
     }
+
 
 
 

@@ -80,6 +80,7 @@
 
 
         <LinearLayout
+            android:id="@+id/status_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
@@ -90,25 +91,53 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_margin="16dp"
-                android:visibility="gone"
+                android:visibility="visible"
                 android:gravity="center|right"
                 android:orientation="horizontal">
 
                 <androidx.appcompat.widget.AppCompatImageView
                     android:layout_width="29dp"
                     android:layout_height="29dp"
-                    android:src="@drawable/ic_invoice_number"/>
+                    android:src="@drawable/ic_cusotmer_status"/>
 
                 <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/txt_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginRight="16dp"
                     android:fontFamily="@font/din_regular"
-                    android:textSize="12sp"
-                    android:textColor="#D32F2F"
+                    android:includeFontPadding="false"
+                    android:textColor="#6D707C"
+                    android:textSize="15sp"
 
-                    android:text="Pending"/>
+                    android:text="قيد الارسال"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/button_status_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_margin="16dp"
+                android:visibility="visible"
+                android:gravity="center|right"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="29dp"
+                    android:layout_height="29dp"
+                    android:src="@drawable/ic_add_return"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/button_send"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="16dp"
+                    android:fontFamily="@font/din_regular"
+                    android:includeFontPadding="false"
+                    android:textColor="#6D707C"
+                    android:textSize="15sp"
+                    android:text="ارسال"/>
             </LinearLayout>
 
         </LinearLayout>

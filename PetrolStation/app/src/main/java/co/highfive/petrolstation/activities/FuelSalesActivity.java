@@ -130,7 +130,7 @@ public class FuelSalesActivity extends BaseActivity {
     }
 
     private void initRecycler() {
-        adapter = new CustomerInvoicesAdapter(displayItems, new CustomerInvoicesAdapter.Listener() {
+        adapter = new CustomerInvoicesAdapter(this,displayItems, new CustomerInvoicesAdapter.Listener() {
             @Override
             public void onView(InvoiceDto invoice) {
                 openInvoiceDetails(invoice);
@@ -146,6 +146,11 @@ public class FuelSalesActivity extends BaseActivity {
                     return;
                 }
                 printInvoice(setting, invoice);
+            }
+
+            @Override
+            public void onSend(InvoiceDto invoice) {
+                sendOneOfflineInvoice(invoice); // ✅
             }
         });
 
@@ -170,6 +175,63 @@ public class FuelSalesActivity extends BaseActivity {
                     loadPageSmart(false, currentPage + 1, false);
                 }
             }
+        });
+    }
+
+    private void sendOneOfflineInvoice(InvoiceDto inv) {
+
+        if (inv == null || !inv.is_offline || inv.local_id <= 0) {
+            toast("هذه الفاتورة ليست أوفلاين");
+            return;
+        }
+
+        if (!connectionAvailable) {
+            toast("لا يوجد إنترنت");
+            return;
+        }
+
+        // ✅ Repo
+        co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository repo =
+                new co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository(
+                        this,
+                        db,
+                        getGson(),
+                        apiClient
+                );
+
+        showProgressHUD();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Handler main = new Handler(Looper.getMainLooper());
+
+        ex.execute(() -> {
+            // ✅ هنا بدك function جديدة بالريبو: syncOneByLocalId(localId, listener)
+            repo.syncOneInvoiceJson(inv.local_id, new co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository.SingleSyncListener() {
+
+                @Override public void onSuccess() {
+                    main.post(() -> {
+                        hideProgressHUD();
+                        toast("تم إرسال الفاتورة");
+//                        fetchInvoicesSmart(false, 1, true); // ✅ refresh list
+                    });
+                }
+
+                @Override public void onFailed(@NonNull String errorMsg) {
+                    main.post(() -> {
+                        hideProgressHUD();
+                        toast(errorMsg);
+//                        fetchInvoicesSmart(false, 1, true);
+                    });
+                }
+
+                @Override public void onNetwork(@NonNull String reason) {
+                    main.post(() -> {
+                        hideProgressHUD();
+                        toast("مشكلة بالشبكة: " + reason);
+//                        fetchInvoicesSmart(false, 1, true);
+                    });
+                }
+            });
         });
     }
 

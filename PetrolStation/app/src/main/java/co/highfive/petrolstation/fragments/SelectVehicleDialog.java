@@ -112,7 +112,9 @@ public class SelectVehicleDialog extends DialogFragment {
         renderVehicles(lastVehicles);
 
         // ✅ Online/Offline fetch
-        fetchVehiclesSmart();
+        if (lastVehicles == null || lastVehicles.isEmpty()) {
+            fetchVehiclesSmart();
+        }
 
         return binding.getRoot();
     }
@@ -156,7 +158,7 @@ public class SelectVehicleDialog extends DialogFragment {
             return;
         }
 
-        if (customerId <= 0) {
+        if (customerId == 0) {
             toastLocal(getString(R.string.general_error));
             return;
         }
