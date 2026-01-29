@@ -32,4 +32,10 @@ public interface OfflineCustomerVehicleDao {
 
     @Query("DELETE FROM offline_customer_vehicles")
     void clearAll();
+
+    @Query("SELECT * FROM offline_customer_vehicles WHERE customerId = :customerId ORDER BY updatedAtTs DESC")
+    List<OfflineCustomerVehicleEntity> getByCustomer(int customerId);
+
+    @Query("SELECT * FROM offline_customer_vehicles WHERE offline_customer_local_id = :offlineCustomerLocalId ORDER BY updatedAtTs DESC")
+    List<OfflineCustomerVehicleEntity> getByOfflineCustomerLocalId(long offlineCustomerLocalId);
 }

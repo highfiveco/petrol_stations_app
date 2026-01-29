@@ -142,14 +142,22 @@ public class CustomerInvoicesActivity extends BaseActivity {
 
     private void readExtras() {
         Bundle extras = getIntent() != null ? getIntent().getExtras() : null;
-        if (extras == null) return;
+        if (extras == null) {
+            binding.title.setText(R.string.invoices);
+            return;
+        }
 
         invoiceType = extras.getInt("invoice_type", 0);
 
-        errorLogger("isOfflineCustomer",""+isOfflineCustomer);
-        errorLogger("offlineCustomerLocalId",""+offlineCustomerLocalId);
-        isOfflineCustomer = extras.getBoolean("is_offline_customer", false);
-        offlineCustomerLocalId = extras.getLong("offline_customer_local_id", 0);
+        errorLogger("invoiceType",""+invoiceType);
+        if(invoiceType == 0){
+            binding.title.setText(R.string.invoices);
+        }else{
+            binding.title.setText(R.string.fuel_sales);
+        }
+
+        isOfflineCustomer = extras.getBoolean("is_offline", false);
+        offlineCustomerLocalId = extras.getLong("offline_local_id", 0);
 
         // customer id (could be negative)
         String cidStr = safe(extras.getString("customer_id"));
@@ -323,6 +331,8 @@ public class CustomerInvoicesActivity extends BaseActivity {
             catch (Exception ignored) {}
 
             Integer cid = customerIdInt;
+
+            errorLogger("customerIdInt",""+customerIdInt);
 
 //            try { if (customerId != null && !customerId.trim().isEmpty()) cid = Integer.parseInt(customerId); }
 //            catch (Exception ignored) {}

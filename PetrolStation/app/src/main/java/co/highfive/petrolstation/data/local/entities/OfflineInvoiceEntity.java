@@ -52,4 +52,35 @@ public class OfflineInvoiceEntity {
 
     public long createdAtTs;   // unified ordering
     public long updatedAtTs;
+
+    @Override
+    public String toString() {
+        return "OfflineInvoiceEntity{" +
+                "localId=" + localId +
+                ", onlineId=" + onlineId +
+                ", customerId=" + customerId +
+                ", customerName='" + customerName + '\'' +
+                ", customerMobile='" + customerMobile + '\'' +
+                ", accountId=" + accountId +
+                ", customerVehicleId=" + customerVehicleId +
+                ", vehicleNumber='" + vehicleNumber + '\'' +
+                ", vehicleModel='" + vehicleModel + '\'' +
+                ", vehicleNotes='" + vehicleNotes + '\'' +
+                ", vehicleType=" + vehicleType +
+                ", licenseExpiryDate='" + licenseExpiryDate + '\'' +
+                ", vehicleColor=" + vehicleColor +
+                ", pumpId=" + pumpId +
+                ", campaignId=" + campaignId +
+                ", isFuelSale=" + isFuelSale +
+                ", statement='" + statement + '\'' +
+                ", invoiceNo='" + invoiceNo + '\'' +
+                ", total=" + total +
+                ", notes='" + notes + '\'' +
+                ", requestJson='" + requestJson + '\'' +
+                ", syncStatus=" + syncStatus +
+                ", syncError='" + syncError + '\'' +
+                ", createdAtTs=" + createdAtTs +
+                ", updatedAtTs=" + updatedAtTs +
+                '}';
+    }
 }

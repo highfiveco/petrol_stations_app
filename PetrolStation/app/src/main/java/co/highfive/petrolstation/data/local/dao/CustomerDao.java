@@ -28,6 +28,9 @@ public interface CustomerDao {
     @Query("DELETE FROM customers")
     void clear();
 
+    @Query("SELECT * FROM customers WHERE accountId = :accountId LIMIT 1")
+    CustomerEntity getCustomerByAccountId(String accountId);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void upsert(CustomerEntity customer);
 
@@ -64,4 +67,9 @@ public interface CustomerDao {
     @Query("SELECT * FROM customers WHERE REPLACE(REPLACE(REPLACE(mobile,' ',''),'-',''),'+','') = :mobileNormalized LIMIT 1")
     CustomerEntity getByMobileNormalizedLoose(String mobileNormalized);
 
+    @Query("UPDATE customers SET mobile = :mobile WHERE id = :customerId")
+    int updateMobileByCustomerId(String customerId, String mobile);
+
+    @Query("UPDATE customers SET mobile = :mobile WHERE accountId = :accountId")
+    int updateMobileByAccountId(String accountId, String mobile);
 }

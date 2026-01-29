@@ -1,6 +1,7 @@
 package co.highfive.petrolstation.activities;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -92,6 +93,7 @@ public class CustomersActivity extends BaseActivity {
         adapter = new CustomerAdapter(new CustomerAdapter.CustomerItemListener() {
             @Override public void onCustomerClick(CustomerDto customer, int position) {
                 Bundle bundle = buildCustomerBundle(customer);
+
                 moveToActivity(CustomersActivity.this, CustomerActivity.class, bundle, false);
             }
 
@@ -201,6 +203,16 @@ public class CustomersActivity extends BaseActivity {
         b.putString("account_id", safe("" + c.account_id));
         b.putString("name", safe(c.name));
         b.putString("mobile", safe(c.mobile));
+
+        if (b == null) {
+            Log.e("BUNDLE", "Bundle is null");
+        } else {
+            for (String key : b.keySet()) {
+                Object value = b.get(key);
+                Log.e("BUNDLE", key + " = " + String.valueOf(value)
+                        + " (" + (value != null ? value.getClass().getSimpleName() : "null") + ")");
+            }
+        }
         return b;
     }
 

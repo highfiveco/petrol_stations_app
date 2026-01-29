@@ -106,4 +106,8 @@ public class Account {
     public void setMobile(String mobile) {
         this.mobile = mobile;
     }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 }

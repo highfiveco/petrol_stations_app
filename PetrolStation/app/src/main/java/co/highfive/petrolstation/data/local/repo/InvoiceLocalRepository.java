@@ -410,7 +410,8 @@ public class InvoiceLocalRepository {
         if (customer.id > 0) {
             e.customerId = customer.id;
         } else if (customer.is_offline && customer.local_id > 0 && customer.id < 0) {
-            e.customerId =(int) customer.local_id;
+            e.customerId = - (int) customer.local_id;
+//            e.localId = customer.local_id;
         } else {
             // لا تحفظ فاتورة بدون customer valid
             throw new IllegalStateException("Invalid customer for offline invoice");
@@ -472,7 +473,7 @@ public class InvoiceLocalRepository {
         e.createdAtTs = now;
         e.updatedAtTs = now;
 
-//        Log.e("e",""+e.toString());
+        Log.e("e",""+e.toString());
 
         return offlineDao.insert(e);
 //        return 0;

@@ -35,11 +35,13 @@ import co.highfive.petrolstation.BuildConfig;
 import co.highfive.petrolstation.R;
 import co.highfive.petrolstation.adapters.DropDownAdapter;
 
+import co.highfive.petrolstation.data.local.entities.CustomerEntity;
 import co.highfive.petrolstation.financial.dto.FinancialAddMoveResponseDto;
 import co.highfive.petrolstation.financial.dto.FinancialResponseDto;
 import co.highfive.petrolstation.hazemhamadaqa.Http.Constant;
 import co.highfive.petrolstation.hazemhamadaqa.activity.BaseActivity;
 import co.highfive.petrolstation.models.Account;
+import co.highfive.petrolstation.models.AppData;
 import co.highfive.petrolstation.models.Currency;
 import co.highfive.petrolstation.models.Transactions;
 import co.highfive.petrolstation.models.Reading;
@@ -51,7 +53,17 @@ import co.highfive.petrolstation.network.BaseResponse;
 import co.highfive.petrolstation.network.Endpoints;
 
 import co.highfive.petrolstation.databinding.ActivityAddFinancialTransactionBinding;
+import android.os.Handler;
+import android.os.Looper;
 
+import com.google.gson.Gson;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import co.highfive.petrolstation.data.local.AppDatabase;
+import co.highfive.petrolstation.data.local.DatabaseProvider;
+import co.highfive.petrolstation.data.local.entities.OfflineFinancialTransactionEntity;
 public class AddFinancialTransactionActivity extends BaseActivity {
 
     private ActivityAddFinancialTransactionBinding binding;
@@ -120,6 +132,8 @@ public class AddFinancialTransactionActivity extends BaseActivity {
 
     private int record = 17;
     private String[] mStrings = new String[]{"CP437", "CP850", "CP860", "CP863", "CP865", "CP857", "CP737", "CP928", "Windows-1252", "CP866", "CP852", "CP858", "CP874", "Windows-775", "CP855", "CP862", "CP864", "GB18030", "BIG5", "KSC5601", "utf-8"};
+
+    private AppDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -198,6 +212,8 @@ public class AddFinancialTransactionActivity extends BaseActivity {
     }
 
     private void setUpViews() {
+
+        db = DatabaseProvider.get(this);
 
         radio_group.setOnCheckedChangeListener((group, checkedId) -> {
 
@@ -688,7 +704,91 @@ public class AddFinancialTransactionActivity extends BaseActivity {
 
     public void getLocalData(boolean isShowDialog){
 
+        if(isShowDialog){
+            showProgressHUD();
+        }
 
+        AppData appData = getGson().fromJson(getSessionManager().getString(getSessionKeys().app_data), AppData.class);
+
+        check_last_reading_sanad = appData.getCheck_last_reading_sanad();
+        has_move = appData.getHas_move();
+        has_load = appData.getHas_load();
+        has_discount = appData.getHas_discount();
+        view_statement = appData.getView_statement();
+        view_date = appData.getView_date();
+        payment_type_default = appData.getPayment_type_default();
+        disabled_type_move = appData.getDisabled_type_move();
+        default_type_income = appData.getDefault_type_income();
+
+
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+
+
+
+                CustomerEntity customerByAccountId = db.customerDao().getCustomerByAccountId(account_id);
+
+                if(customerByAccountId != null){
+                    account=  new Account();
+                    account.setId(""+account_id);
+                    account.setMobile(""+customerByAccountId.mobile);
+                    account.setAccount_name(""+customerByAccountId.name);
+                    account.setAccount_currency(""+customerByAccountId.accountCurrency);
+                    account.setName_currency(""+customerByAccountId.currencyName);
+                    account.setAccount_type(""+customerByAccountId.name);
+                    account.setBalance( customerByAccountId.balance);
+                }
+
+            }catch (Exception e){
+                errorLogger("Exception",""+e.getMessage());
+            }
+        });
+
+
+        payment_type = new ArrayList<>();
+        currencies = new ArrayList<>();
+        type_loaded = new ArrayList<>();
+        type_income = new ArrayList<>();
+        banks = new ArrayList<>();
+        if(appData != null){
+            if(appData.getPayment_type() != null && !appData.getPayment_type().isEmpty() ){
+                for (int i = 0; i < appData.getPayment_type().size(); i++) {
+                    payment_type.add(new Currency(appData.getPayment_type().get(i).getId(),appData.getPayment_type().get(i).getName()));
+                }
+            }
+
+            if(appData.getCurrency() != null && !appData.getCurrency().isEmpty() ){
+                for (int i = 0; i < appData.getCurrency().size(); i++) {
+                    currencies.add(new Currency(appData.getCurrency().get(i).getId(),appData.getCurrency().get(i).getName()));
+                }
+            }
+            if(appData.getType_loaded() != null && !appData.getType_loaded().isEmpty() ){
+                for (int i = 0; i < appData.getType_loaded().size(); i++) {
+                    type_loaded.add(new Currency(appData.getType_loaded().get(i).getId(),appData.getType_loaded().get(i).getName()));
+                }
+            }
+
+
+
+            if(appData.getType_income() != null && !appData.getType_income().isEmpty() ){
+                for (int i = 0; i < appData.getType_income().size(); i++) {
+                    type_income.add(new Currency(appData.getType_income().get(i).getId(),appData.getType_income().get(i).getName()));
+                }
+            }
+
+            errorLogger("type_income",""+type_income.size());
+
+            if(appData.getBank() != null && !appData.getBank().isEmpty() ){
+                for (int i = 0; i < appData.getBank().size(); i++) {
+                    banks.add(new Currency(appData.getBank().get(i).getId(),appData.getBank().get(i).getName()));
+                }
+            }
+        }
+
+        hideProgressHUD();
+        setUpData();
     }
 
     void phone(){
@@ -1024,18 +1124,266 @@ public class AddFinancialTransactionActivity extends BaseActivity {
         );
     }
 
-    public void addLocalMove(boolean isShowDialog){
+    public void addLocalMove(boolean isShowDialog) {
 
+        String validate = validate();
+        if (validate != null) {
+            toast(validate);
+            return;
+        }
 
+        if (account == null || account.getId() == null) {
+            toast(R.string.customer_not_found);
+            return;
+        }
+
+        if (isShowDialog) showProgressHUD();
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler mainHandler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+            try {
+                AppDatabase db =DatabaseProvider.get(this);
+
+                OfflineFinancialTransactionEntity e = new OfflineFinancialTransactionEntity();
+                e.customerId = safeToInt(customer_id);
+                e.accountId = safeToInt(String.valueOf(account.getId()));
+
+                e.actionType = 1;
+
+                e.paymentTypeId = safeToInt(payment_method_id);
+                e.bankId = safeToInt(bank_id);
+
+                e.chequeNo = safeStr(check_number);
+                e.dueDate = safeStr(due_date);
+                e.date = safeStr(date);
+
+                e.currencyId = safeToInt(currency_id);
+                e.amount = safeStr(amount);
+                e.statement = safeStr(statement);
+                e.notes = safeStr(notes);
+
+                e.typeMoveId = safeToInt(income_type_id);
+
+                long now = System.currentTimeMillis();
+                e.createdAtTs = now;
+                e.updatedAtTs = now;
+
+                e.syncStatus = 0;
+                e.syncError = null;
+
+                Gson gson = new Gson();
+                e.requestJson = gson.toJson(buildLocalMoveRequestJson());
+
+                db.offlineFinancialTransactionDao().insert(e);
+
+                mainHandler.post(() -> {
+                    if (isShowDialog) hideProgressHUD();
+                    toast(getString(R.string.done));
+                    finish();
+                });
+
+            } catch (Exception ex) {
+                mainHandler.post(() -> {
+                    if (isShowDialog) hideProgressHUD();
+                    errorLogger("addLocalMove", ex.getMessage() == null ? "null" : ex.getMessage());
+                    toast(getString(R.string.general_error));
+                });
+            } finally {
+                executor.shutdown();
+            }
+        });
     }
 
-    public void addLocalLoad(boolean isShowDialog){
+    public void addLocalLoad(boolean isShowDialog) {
 
+        String validate = validate();
+        if (validate != null) {
+            toast(validate);
+            return;
+        }
+
+        if (account == null || account.getId() == null) {
+            toast(R.string.customer_not_found);
+            return;
+        }
+
+        if (isShowDialog) showProgressHUD();
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler mainHandler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+            try {
+                AppDatabase db  = DatabaseProvider.get(this);
+
+                OfflineFinancialTransactionEntity e = new OfflineFinancialTransactionEntity();
+                e.customerId = safeToInt(customer_id);
+                e.accountId = safeToInt(String.valueOf(account.getId()));
+
+                e.actionType = 2;
+
+                e.currencyId = safeToInt(currency_id);
+                e.amount = safeStr(amount);
+                e.statement = safeStr(statement);
+                e.notes = safeStr(notes);
+
+                e.typeMoveId = safeToInt(transaction_type_id);
+
+                long now = System.currentTimeMillis();
+                e.createdAtTs = now;
+                e.updatedAtTs = now;
+
+                e.syncStatus = 0;
+                e.syncError = null;
+
+                Gson gson = new Gson();
+                e.requestJson = gson.toJson(buildLocalLoadRequestJson());
+
+                db.offlineFinancialTransactionDao().insert(e);
+
+                mainHandler.post(() -> {
+                    if (isShowDialog) hideProgressHUD();
+                    toast(getString(R.string.done));
+                    finish();
+                });
+
+            } catch (Exception ex) {
+                mainHandler.post(() -> {
+                    if (isShowDialog) hideProgressHUD();
+                    errorLogger("addLocalLoad", ex.getMessage() == null ? "null" : ex.getMessage());
+                    toast(getString(R.string.general_error));
+                });
+            } finally {
+                executor.shutdown();
+            }
+        });
     }
 
-    public void addLocalDiscount(boolean isShowDialog){
+    public void addLocalDiscount(boolean isShowDialog) {
 
+        String validate = validate();
+        if (validate != null) {
+            toast(validate);
+            return;
+        }
+
+        if (account == null || account.getId() == null) {
+            toast(R.string.customer_not_found);
+            return;
+        }
+
+        if (isShowDialog) showProgressHUD();
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler mainHandler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+            try {
+                AppDatabase db = DatabaseProvider.get(this);
+
+                OfflineFinancialTransactionEntity e = new OfflineFinancialTransactionEntity();
+                e.customerId = safeToInt(customer_id);
+                e.accountId = safeToInt(String.valueOf(account.getId()));
+
+                e.actionType = 3;
+
+                e.currencyId = safeToInt(currency_id);
+                e.amount = safeStr(amount);
+                e.statement = safeStr(statement);
+                e.notes = safeStr(notes);
+
+                long now = System.currentTimeMillis();
+                e.createdAtTs = now;
+                e.updatedAtTs = now;
+
+                e.syncStatus = 0;
+                e.syncError = null;
+
+                Gson gson = new Gson();
+                e.requestJson = gson.toJson(buildLocalDiscountRequestJson());
+
+                db.offlineFinancialTransactionDao().insert(e);
+
+                mainHandler.post(() -> {
+                    if (isShowDialog) hideProgressHUD();
+                    toast(getString(R.string.done));
+                    finish();
+                });
+
+            } catch (Exception ex) {
+                mainHandler.post(() -> {
+                    if (isShowDialog) hideProgressHUD();
+                    errorLogger("addLocalDiscount", ex.getMessage() == null ? "null" : ex.getMessage());
+                    toast(getString(R.string.general_error));
+                });
+            } finally {
+                executor.shutdown();
+            }
+        });
     }
+
+    private Map<String, Object> buildLocalMoveRequestJson() {
+        Map<String, Object> m = new java.util.HashMap<>();
+        m.put("account_id", account != null ? account.getId() : null);
+        m.put("payment_type", payment_method_id);
+        m.put("date", safeStr(date));
+        m.put("notes", safeStr(notes));
+        m.put("amount", safeStr(amount));
+        m.put("currency", currency_id);
+        m.put("type_move", income_type_id);
+        m.put("statement", safeStr(statement));
+
+        if ("2".equals(safe(payment_method_id))) {
+            m.put("cheque_no", safeStr(check_number));
+            m.put("due_date", safeStr(due_date));
+            m.put("bank_id", bank_id);
+        }
+        return m;
+    }
+
+    private Map<String, Object> buildLocalLoadRequestJson() {
+        Map<String, Object> m = new java.util.HashMap<>();
+        m.put("statement", safeStr(statement));
+        m.put("amount", safeStr(amount));
+        m.put("currency", currency_id);
+        m.put("account_id", account != null ? account.getId() : null);
+        m.put("notes", safeStr(notes));
+        m.put("type_move", transaction_type_id);
+        return m;
+    }
+
+    private Map<String, Object> buildLocalDiscountRequestJson() {
+        Map<String, Object> m = new java.util.HashMap<>();
+        m.put("statement", safeStr(statement));
+        m.put("amount", safeStr(amount));
+        m.put("currency", currency_id);
+        m.put("account_id", account != null ? account.getId() : null);
+        m.put("notes", safeStr(notes));
+        return m;
+    }
+    private int safeToInt(String v) {
+        try {
+            if (v == null) return 0;
+            String t = v.trim();
+            if (t.isEmpty()) return 0;
+            return Integer.parseInt(t);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private String safeStr(AppCompatEditText et) {
+        if (et == null || et.getText() == null) return "";
+        return et.getText().toString().trim();
+    }
+
+    private String safeStr(AppCompatTextView tv) {
+        if (tv == null || tv.getText() == null) return "";
+        return tv.getText().toString().trim();
+    }
+
 
 
 }

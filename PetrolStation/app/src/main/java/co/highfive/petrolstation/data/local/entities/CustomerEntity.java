@@ -39,4 +39,7 @@ public class CustomerEntity {
 
     public String accountNo;
 
+    public String currencyName;
+    public String accountCurrency;
+
 }

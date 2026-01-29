@@ -37,4 +37,8 @@ public interface OfflineCustomerDao {
     @Query("SELECT * FROM offline_customers WHERE name LIKE '%' || :q || '%' OR mobile LIKE '%' || :q || '%' ORDER BY name LIMIT 50")
     List<OfflineCustomerEntity> search(String q);
 
+    @Query("UPDATE offline_customers SET mobile = :mobile, mobile_normalized = :mobileNormalized, updated_at_ts = :updatedAtTs WHERE local_id = :localId")
+    int updateMobileByLocalId(long localId, String mobile, String mobileNormalized, long updatedAtTs);
+
+
 }

@@ -22,7 +22,10 @@ import co.highfive.petrolstation.data.local.dao.CustomerStatusDao;
 import co.highfive.petrolstation.data.local.dao.CustomerVehicleDao;
 import co.highfive.petrolstation.data.local.dao.ItemsCacheDao;
 import co.highfive.petrolstation.data.local.dao.OfflineCustomerDao;
+import co.highfive.petrolstation.data.local.dao.OfflineCustomerPhoneUpdateDao;
 import co.highfive.petrolstation.data.local.dao.OfflineCustomerVehicleDao;
+import co.highfive.petrolstation.data.local.dao.OfflineCustomerVehicleEditDao;
+import co.highfive.petrolstation.data.local.dao.OfflineFinancialTransactionDao;
 import co.highfive.petrolstation.data.local.dao.OfflineFuelInvoiceDao;
 import co.highfive.petrolstation.data.local.dao.OfflineInvoiceDao;
 import co.highfive.petrolstation.data.local.dao.PumpDao;
@@ -71,7 +74,10 @@ import co.highfive.petrolstation.data.local.entities.CustomerStatusEntity;
 import co.highfive.petrolstation.data.local.entities.CustomerVehicleEntity;
 import co.highfive.petrolstation.data.local.entities.ItemsCacheEntity;
 import co.highfive.petrolstation.data.local.entities.OfflineCustomerEntity;
+import co.highfive.petrolstation.data.local.entities.OfflineCustomerPhoneUpdateEntity;
+import co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEditEntity;
 import co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity;
+import co.highfive.petrolstation.data.local.entities.OfflineFinancialTransactionEntity;
 import co.highfive.petrolstation.data.local.entities.OfflineFuelInvoiceEntity;
 import co.highfive.petrolstation.data.local.entities.OfflineInvoiceEntity;
 import co.highfive.petrolstation.data.local.entities.PosItemCacheEntity;
@@ -200,9 +206,12 @@ import co.highfive.petrolstation.data.local.entities.CampaignEntity;
                 AccountEntity.class,
                 PumpEntity.class,
                 CampaignEntity.class,
-                PosItemCacheEntity.class
+                PosItemCacheEntity.class,
+                OfflineFinancialTransactionEntity.class,
+                OfflineCustomerPhoneUpdateEntity.class,
+                OfflineCustomerVehicleEditEntity.class
         },
-        version = 21,
+        version = 26,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -271,4 +280,10 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract ItemsCacheDao itemsCacheDao();
     public abstract OfflineCustomerDao offlineCustomerDao();
     public abstract OfflineCustomerVehicleDao offlineCustomerVehicleDao();
+
+    public abstract OfflineFinancialTransactionDao offlineFinancialTransactionDao();
+
+    public abstract OfflineCustomerPhoneUpdateDao offlineCustomerPhoneUpdateDao();
+    public abstract OfflineCustomerVehicleEditDao offlineCustomerVehicleEditDao();
+
 }

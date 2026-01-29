@@ -3,6 +3,8 @@ package co.highfive.petrolstation.activities;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -10,12 +12,18 @@ import androidx.annotation.Nullable;
 import co.highfive.petrolstation.R;
 import co.highfive.petrolstation.customers.dialogs.SendSmsDialog;
 import co.highfive.petrolstation.customers.dialogs.UpdatePhoneDialog;
+import co.highfive.petrolstation.data.local.AppDatabase;
+import co.highfive.petrolstation.data.local.DatabaseProvider;
+import co.highfive.petrolstation.data.local.entities.OfflineCustomerPhoneUpdateEntity;
 import co.highfive.petrolstation.databinding.ActivityCustomerBinding;
 import co.highfive.petrolstation.hazemhamadaqa.activity.BaseActivity;
 
+import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import co.highfive.petrolstation.customers.dialogs.AddReminderDialog;
 import co.highfive.petrolstation.hazemhamadaqa.Http.Constant;
@@ -127,11 +135,20 @@ public class CustomerActivity extends BaseActivity {
         Bundle b = getIntent() != null ? getIntent().getExtras() : null;
         if (b == null) return;
 
-        isOfflineCustomer = b.getBoolean("is_offline_customer", false);
-        offlineCustomerLocalId = b.getLong("offline_customer_local_id", 0);
+        isOfflineCustomer = b.getBoolean("is_offline", false);
+        String tempCustomerId = b.getString("offline_local_id", null);
+        if (tempCustomerId != null) {
+            offlineCustomerLocalId = Long.parseLong(tempCustomerId);
+        }
+
+
+        errorLogger("isOfflineCustomer",""+isOfflineCustomer);
+        errorLogger("offlineCustomerLocalId",""+offlineCustomerLocalId);
 
         customerId = safe(b.getString("id"));
         if (customerId.trim().isEmpty()) customerId = safe(b.getString("customer_id"));
+
+        errorLogger("customerId",""+customerId);
 
         accountId = safe(b.getString("account_id"));
         customerName = safe(b.getString("name"));
@@ -247,7 +264,7 @@ public class CustomerActivity extends BaseActivity {
                 if (connectionAvailable) {
                     updatePhoneRequest(true, phone);
                 } else {
-                    toast(R.string.no_internet); // حسب طلبك تجاهل updateLocalPhoneRequest
+                    updateLocalPhoneRequest(true, phone);
                 }
             });
         });
@@ -347,6 +364,130 @@ public class CustomerActivity extends BaseActivity {
                 }
         );
     }
+
+    private void updateLocalPhoneRequest(boolean showDialog, String phoneVal) {
+
+        if (phoneVal == null || phoneVal.trim().isEmpty()) {
+            toast(getString(R.string.general_error));
+            return;
+        }
+
+        if (showDialog) showProgressHUD();
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler mainHandler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+            try {
+                AppDatabase db = DatabaseProvider.get(getApplicationContext());
+
+                String newMobile = phoneVal.trim();
+                long now = System.currentTimeMillis();
+
+                int updatedRows = 0;
+
+                errorLogger("isOfflineCustomer",""+isOfflineCustomer);
+                errorLogger("offlineCustomerLocalId",""+offlineCustomerLocalId);
+                errorLogger("customerId",""+customerId);
+
+                // 1) Update the right local table depending on isOfflineCustomer
+                if (isOfflineCustomer && customerId != null && !customerId.trim().isEmpty() ) {
+
+                    errorLogger("hazem","hazem");
+                    errorLogger("offlineCustomerLocalId",""+offlineCustomerLocalId);
+                    String normalized = normalizeMobile(newMobile);
+                    updatedRows = db.offlineCustomerDao()
+                            .updateMobileByLocalId(offlineCustomerLocalId, newMobile, normalized, now);
+
+                } else {
+                    // Online customer stored locally in customers table
+                    if (accountId != null && !accountId.trim().isEmpty()) {
+                        updatedRows = db.customerDao().updateMobileByAccountId(accountId, newMobile);
+                    } else if (customerId != null && !customerId.trim().isEmpty()) {
+                        updatedRows = db.customerDao().updateMobileByCustomerId(customerId, newMobile);
+                    }
+                }
+
+                // 2) Insert pending sync record
+                OfflineCustomerPhoneUpdateEntity req = new OfflineCustomerPhoneUpdateEntity();
+                req.customerId = safe(customerId);
+                req.accountId = safe(accountId);
+                req.isOfflineCustomer = isOfflineCustomer ? 1 : 0;
+                req.offlineLocalId = offlineCustomerLocalId;
+
+                req.oldMobile = safe(customerMobile);
+                req.newMobile = newMobile;
+
+                req.createdAtTs = now;
+                req.updatedAtTs = now;
+                req.syncStatus = 0;
+                req.syncError = null;
+
+                Map<String, Object> payload = new java.util.HashMap<>();
+                payload.put("id", safe(customerId));
+                payload.put("account_id", safe(accountId));
+                payload.put("mobile", newMobile);
+                payload.put("is_offline", isOfflineCustomer);
+                payload.put("offline_local_id", offlineCustomerLocalId);
+
+                req.requestJson = new Gson().toJson(payload);
+
+                db.offlineCustomerPhoneUpdateDao().insert(req);
+
+                mainHandler.post(() -> {
+                    if (showDialog) hideProgressHUD();
+
+                    // Update UI variables
+                    customerMobile = newMobile;
+                    binding.phone.setText(newMobile);
+
+                    if (updatePhoneDialog != null) {
+                        updatePhoneDialog.dismissAllowingStateLoss();
+                    }
+
+                    toast(getString(R.string.saved_local));
+
+                    // Optional debug
+//                    errorLogger("updateLocalPhoneRequest", "updatedRows=" + updatedRows);
+                });
+
+            } catch (Exception ex) {
+                mainHandler.post(() -> {
+                    if (showDialog) hideProgressHUD();
+                    errorLogger("updateLocalPhoneRequest", ex.getMessage() == null ? "null" : ex.getMessage());
+                    toast(getString(R.string.general_error));
+                });
+            } finally {
+                executor.shutdown();
+            }
+        });
+    }
+
+    private String normalizeMobile(String mobile) {
+//        if (mobile == null) return "";
+//        String x = mobile.trim();
+//
+//        // keep digits only
+//        x = x.replaceAll("[^0-9+]", "");
+//
+//        // optional: remove leading +
+//        if (x.startsWith("+")) x = x.substring(1);
+//
+//        return x;
+        return mobile;
+    }
+
+    private Integer safeIntOrNull(String v) {
+        try {
+            if (v == null) return null;
+            String t = v.trim();
+            if (t.isEmpty()) return null;
+            return Integer.parseInt(t);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
 
     private void openSendSmsDialog() {
         sendSmsDialog = new SendSmsDialog();
@@ -450,8 +591,8 @@ public class CustomerActivity extends BaseActivity {
         b.putString("mobile", safe(customerMobile));
 
         // ✅ offline markers
-        b.putBoolean("is_offline_customer", isOfflineCustomer);
-        b.putLong("offline_customer_local_id", offlineCustomerLocalId);
+        b.putBoolean("is_offline", isOfflineCustomer);
+        b.putLong("offline_local_id", offlineCustomerLocalId);
 
         return b;
     }

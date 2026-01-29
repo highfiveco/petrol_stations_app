@@ -13,12 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,7 +25,7 @@ import co.highfive.petrolstation.customers.dto.InvoiceDto;
 import co.highfive.petrolstation.customers.dto.InvoicesPaginationDto;
 import co.highfive.petrolstation.data.local.AppDatabase;
 import co.highfive.petrolstation.data.local.DatabaseProvider;
-import co.highfive.petrolstation.data.local.dao.UnifiedInvoiceRow;
+import co.highfive.petrolstation.data.local.entities.CustomerEntity;
 import co.highfive.petrolstation.data.local.entities.InvoiceEntity;
 import co.highfive.petrolstation.data.local.entities.OfflineInvoiceEntity;
 import co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository;
@@ -53,14 +49,12 @@ public class FuelSalesActivity extends BaseActivity {
 
     private InvoiceLocalRepository repo;
 
-    private final ArrayList<InvoiceDto> displayItems = new ArrayList<>();
     private CustomerInvoicesAdapter adapter;
 
-    private boolean isCustomerMode = false;
-    private String accountId = "";
-    private String customerId = "";
-    private String customerName = "";
-    private String customerMobile = "";
+    private final ArrayList<InvoiceDto> pendingOffline = new ArrayList<>();
+    private final ArrayList<InvoiceDto> onlineItems = new ArrayList<>();
+    private final ArrayList<InvoiceDto> cachedItems = new ArrayList<>();
+    private final ArrayList<InvoiceDto> displayItems = new ArrayList<>();
 
     private boolean isLoading = false;
     private boolean hasNextPage = true;
@@ -68,6 +62,17 @@ public class FuelSalesActivity extends BaseActivity {
 
     private final int pageSize = 10;
     private final int isFuelSale = 1;
+
+    private boolean isCustomerMode = false;
+
+    private String accountId = "";
+    private String customerName = "";
+    private String customerMobile = "";
+
+    private boolean isOfflineCustomer = false;
+    private long offlineCustomerLocalId = 0;
+
+    private int customerIdInt = 0;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -90,22 +95,26 @@ public class FuelSalesActivity extends BaseActivity {
         initRecycler();
         initRefresh();
 
-        // أول تحميل:
-        refreshSmart(true);
+        fetchFuelSalesSmart(true, 1, true);
     }
 
     private void readExtras() {
         Bundle extras = getIntent() != null ? getIntent().getExtras() : null;
         if (extras == null) return;
 
-        customerId = safe(extras.getString("customer_id"));
-        if (customerId.trim().isEmpty()) customerId = safe(extras.getString("id"));
+        isOfflineCustomer = extras.getBoolean("is_offline", false);
+        offlineCustomerLocalId = extras.getLong("offline_local_id", 0);
+
+        String cidStr = safe(extras.getString("customer_id"));
+        if (cidStr.trim().isEmpty()) cidStr = safe(extras.getString("id"));
+
+        try { customerIdInt = Integer.parseInt(cidStr); } catch (Exception ignored) { customerIdInt = 0; }
 
         accountId = safe(extras.getString("account_id"));
         customerName = safe(extras.getString("name"));
         customerMobile = safe(extras.getString("mobile"));
 
-        isCustomerMode = !accountId.trim().isEmpty() || !customerId.trim().isEmpty();
+        isCustomerMode = (customerIdInt != 0) || (accountId != null && !accountId.trim().isEmpty());
     }
 
     private void initHeader() {
@@ -130,7 +139,7 @@ public class FuelSalesActivity extends BaseActivity {
     }
 
     private void initRecycler() {
-        adapter = new CustomerInvoicesAdapter(this,displayItems, new CustomerInvoicesAdapter.Listener() {
+        adapter = new CustomerInvoicesAdapter(this, displayItems, new CustomerInvoicesAdapter.Listener() {
             @Override
             public void onView(InvoiceDto invoice) {
                 openInvoiceDetails(invoice);
@@ -150,7 +159,7 @@ public class FuelSalesActivity extends BaseActivity {
 
             @Override
             public void onSend(InvoiceDto invoice) {
-                sendOneOfflineInvoice(invoice); // ✅
+                sendOneOfflineInvoice(invoice);
             }
         });
 
@@ -164,6 +173,7 @@ public class FuelSalesActivity extends BaseActivity {
             @Override
             public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
                 super.onScrolled(rv, dx, dy);
+
                 if (dy <= 0) return;
                 if (isLoading || !hasNextPage) return;
 
@@ -172,151 +182,127 @@ public class FuelSalesActivity extends BaseActivity {
                 int firstVisible = lm.findFirstVisibleItemPosition();
 
                 if ((visibleCount + firstVisible) >= (totalCount - 3)) {
-                    loadPageSmart(false, currentPage + 1, false);
+                    fetchFuelSalesSmart(false, currentPage + 1, false);
                 }
             }
-        });
-    }
-
-    private void sendOneOfflineInvoice(InvoiceDto inv) {
-
-        if (inv == null || !inv.is_offline || inv.local_id <= 0) {
-            toast("هذه الفاتورة ليست أوفلاين");
-            return;
-        }
-
-        if (!connectionAvailable) {
-            toast("لا يوجد إنترنت");
-            return;
-        }
-
-        // ✅ Repo
-        co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository repo =
-                new co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository(
-                        this,
-                        db,
-                        getGson(),
-                        apiClient
-                );
-
-        showProgressHUD();
-
-        ExecutorService ex = Executors.newSingleThreadExecutor();
-        Handler main = new Handler(Looper.getMainLooper());
-
-        ex.execute(() -> {
-            // ✅ هنا بدك function جديدة بالريبو: syncOneByLocalId(localId, listener)
-            repo.syncOneInvoiceJson(inv.local_id, new co.highfive.petrolstation.data.local.repo.InvoiceLocalRepository.SingleSyncListener() {
-
-                @Override public void onSuccess() {
-                    main.post(() -> {
-                        hideProgressHUD();
-                        toast("تم إرسال الفاتورة");
-//                        fetchInvoicesSmart(false, 1, true); // ✅ refresh list
-                    });
-                }
-
-                @Override public void onFailed(@NonNull String errorMsg) {
-                    main.post(() -> {
-                        hideProgressHUD();
-                        toast(errorMsg);
-//                        fetchInvoicesSmart(false, 1, true);
-                    });
-                }
-
-                @Override public void onNetwork(@NonNull String reason) {
-                    main.post(() -> {
-                        hideProgressHUD();
-                        toast("مشكلة بالشبكة: " + reason);
-//                        fetchInvoicesSmart(false, 1, true);
-                    });
-                }
-            });
         });
     }
 
     private void initRefresh() {
-        binding.swipeRefreshLayout.setOnRefreshListener(() -> refreshSmart(false));
+        binding.swipeRefreshLayout.setOnRefreshListener(() -> fetchFuelSalesSmart(false, 1, true));
     }
 
-    private void refreshSmart(boolean showDialog) {
-        loadPageSmart(showDialog, 1, true);
-    }
-
-    private void loadPageSmart(boolean showDialog, int page, boolean isReset) {
+    private void fetchFuelSalesSmart(boolean showDialog, int page, boolean isReset) {
         if (isLoading) return;
 
-        Integer cid = safeInt(customerId);
-        if (cid == null || cid <= 0) {
-            toast("لا يوجد customer_id");
-            return;
-        }
-
-        isLoading = true;
-
-        if (showDialog) showProgressHUD();
-        binding.swipeRefreshLayout.setRefreshing(!showDialog);
-
         if (connectionAvailable) {
-            // 1) جرّب تعمل sync للـ offline pending أولاً
-            syncPendingThenLoad(cid, page, isReset, showDialog);
+            if (isReset) {
+                loadPendingOffline(() -> {
+                    rebuildDisplayListOnlineMode(true);
+                    fetchFuelSalesOnline(showDialog, 1, true);
+                });
+            } else {
+                fetchFuelSalesOnline(showDialog, page, false);
+            }
         } else {
-            // Offline: load unified directly
-            loadUnifiedFromDb(cid, page, isReset, showDialog);
+            if (isReset) {
+                loadPendingOffline(() -> {
+                    rebuildDisplayListOfflineMode();
+
+                    if (customerIdInt < 0 || isOfflineCustomer) {
+                        currentPage = 1;
+                        hasNextPage = false;
+                        if (isCustomerMode) binding.amount.setText("0");
+                        return;
+                    }
+
+                    fetchFuelSalesOffline(showDialog, 1, true);
+                });
+            } else {
+                fetchFuelSalesOffline(showDialog, page, false);
+            }
         }
     }
 
-    private void syncPendingThenLoad(int customerIdInt, int page, boolean isReset, boolean showDialog) {
+    private void loadPendingOffline(@Nullable Runnable done) {
 
-        // Sync only pending fuel invoices (limit مثلا 20)
+        errorLogger("loadPendingOffline","loadPendingOffline");
         dbExecutor.execute(() -> {
-            try {
-                repo.syncPendingFuelInvoices(20, (success, failed, skipped) -> {
-                    // بعد ما يخلص sync (حتى لو فشل/توقف)، اعمل fetch من السيرفر لتحديث invoices cache (اختياري)
-                    mainHandler.post(() -> fetchFuelInvoicesOnlineAndCache(customerIdInt, page, isReset, showDialog));
-                });
-            } catch (Exception e) {
-                // حتى لو sync ضرب، كمل load طبيعي
-                mainHandler.post(() -> fetchFuelInvoicesOnlineAndCache(customerIdInt, page, isReset, showDialog));
+            List<OfflineInvoiceEntity> rows;
+
+            Integer aid = null;
+            try { if (accountId != null && !accountId.trim().isEmpty()) aid = Integer.parseInt(accountId); }
+            catch (Exception ignored) {}
+
+            Integer cid = customerIdInt;
+
+            errorLogger("customerIdInt",""+customerIdInt);
+            if (aid != null && aid > 0) {
+                rows = db.offlineInvoiceDao().getPendingByAccountAndType(aid, isFuelSale);
+            } else if (cid != null && cid != 0) {
+                errorLogger("cid",""+cid);
+                rows = db.offlineInvoiceDao().getPendingByCustomerAndType(cid, isFuelSale);
+            } else {
+                rows = db.offlineInvoiceDao().getPendingByType(isFuelSale);
             }
+
+            ArrayList<InvoiceDto> mapped = new ArrayList<>();
+            if (rows != null) {
+                for (OfflineInvoiceEntity e : rows) mapped.add(mapOfflineEntityToDto(e));
+            }
+
+            mainHandler.post(() -> {
+                pendingOffline.clear();
+                pendingOffline.addAll(mapped);
+                if (done != null) done.run();
+            });
         });
     }
 
-    /**
-     * ✅ ONLINE:
-     * - جيب من السيرفر (حسب API عندك)
-     * - اعمل upsert للـ invoices table (isFuelSale=1)
-     * - بعدين اعرض unified feed (Online from DB + Offline pending)
-     */
-    private void fetchFuelInvoicesOnlineAndCache(int customerIdInt, int page, boolean isReset, boolean showDialog) {
+    private void rebuildDisplayListOnlineMode(boolean isResetOnline) {
+        displayItems.clear();
+        displayItems.addAll(pendingOffline);
+        displayItems.addAll(onlineItems);
+        adapter.notifyDataSetChanged();
+    }
 
-        // IMPORTANT:
-        // عدّل endpoint والparams حسب API عندك.
-        // خيار 1: نفس CUSTOMERS_GETINVOICES مع باراميتر is_fuel_sale=1
-        // خيار 2: Endpoint خاص لفواتير المحروقات
+    private void rebuildDisplayListOfflineMode() {
+        displayItems.clear();
+        displayItems.addAll(pendingOffline);
+        displayItems.addAll(cachedItems);
+        adapter.notifyDataSetChanged();
+    }
+
+    private void fetchFuelSalesOnline(boolean showDialog, int page, boolean isReset) {
+        if (isLoading) return;
+
+        isLoading = true;
+        if (showDialog) showProgressHUD();
+        binding.swipeRefreshLayout.setRefreshing(!showDialog);
 
         Map<String, String> params;
 
-        // لو عندك account_id (customer mode) مثل CustomerInvoicesActivity
-        if (accountId != null && !accountId.trim().isEmpty()) {
-            params = ApiClient.mapOf(
-                    "page", String.valueOf(page),
-                    "account_id", accountId,
-                    "is_fuel_sale", "1" // <-- عدّلها حسب السيرفر
-            );
+        if (isCustomerMode) {
+            if (accountId != null && !accountId.trim().isEmpty()) {
+                params = ApiClient.mapOf(
+                        "page", String.valueOf(page),
+                        "account_id", accountId
+                );
+            } else {
+                params = ApiClient.mapOf(
+                        "page", String.valueOf(page),
+                        "customer_id", String.valueOf(customerIdInt)
+                );
+            }
         } else {
-            params = ApiClient.mapOf(
-                    "page", String.valueOf(page),
-                    "customer_id", String.valueOf(customerIdInt),
-                    "is_fuel_sale", "1" // <-- عدّلها حسب السيرفر
-            );
+            params = ApiClient.mapOf("page", String.valueOf(page));
         }
 
         Type type = new TypeToken<BaseResponse<InvoicesPaginationDto>>() {}.getType();
 
         apiClient.request(
                 Constant.REQUEST_GET,
-                Endpoints.CUSTOMERS_GETFUELSALES, // <-- عدّلها إذا عندك Endpoint fuel خاص
+                Endpoints.CUSTOMERS_GETFUELSALES,
                 params,
                 null,
                 type,
@@ -325,252 +311,265 @@ public class FuelSalesActivity extends BaseActivity {
 
                     @Override
                     public void onSuccess(InvoicesPaginationDto data, String msg, String rawJson) {
+                        isLoading = false;
+                        if (showDialog) hideProgressHUD();
+                        binding.swipeRefreshLayout.setRefreshing(false);
 
-                        // خزّن invoices في DB ثم اعرض unified
-                        List<InvoiceDto> serverList = (data != null && data.data != null) ? data.data : new ArrayList<>();
+                        if (data == null) {
+                            toast(getString(R.string.general_error));
+                            return;
+                        }
 
-                        dbExecutor.execute(() -> {
-                            try {
-                                List<InvoiceEntity> entities = mapServerInvoicesToEntities(serverList, customerIdInt);
-                                if (entities != null && !entities.isEmpty()) {
-                                    db.invoiceDao().upsertAll(entities);
+                        try {
+                            if (data.data != null && !data.data.isEmpty() && data.data.get(0) != null && data.data.get(0).account != null) {
+                                if (data.data.get(0).account.getBalance() != null) {
+                                    binding.amount.setText("" + data.data.get(0).account.getBalance());
+                                } else if (data.data.get(0).account.getCredit() != null && data.data.get(0).account.getDepit() != null) {
+                                    double balance = data.data.get(0).account.getCredit() - data.data.get(0).account.getDepit();
+                                    binding.amount.setText("" + balance);
                                 }
-                            } catch (Exception ignored) {}
+                            }
+                        } catch (Exception ignored) {}
 
-                            mainHandler.post(() -> {
-                                // balance header (اختياري) مثل كودك
-                                try {
-                                    if (data != null && data.data != null && !data.data.isEmpty() && data.data.get(0) != null && data.data.get(0).account != null) {
-                                        if (data.data.get(0).account.getBalance() != null) {
-                                            binding.amount.setText("" + data.data.get(0).account.getBalance());
-                                        } else if (data.data.get(0).account.getCredit() != null && data.data.get(0).account.getDepit() != null) {
-                                            double balance = data.data.get(0).account.getCredit() - data.data.get(0).account.getDepit();
-                                            binding.amount.setText("" + balance);
-                                        }
-                                    }
-                                } catch (Exception ignored2) {}
+                        List<InvoiceDto> list = (data.data != null) ? data.data : new ArrayList<>();
 
-                                // الآن اعرض unified من DB (وبالتالي تشمل OFFLINE pending)
-                                loadUnifiedFromDb(customerIdInt, page, isReset, showDialog);
+                        if (isReset) {
+                            onlineItems.clear();
+                            onlineItems.addAll(list);
+                            currentPage = (data.current_page != null) ? data.current_page : 1;
+                        } else {
+                            onlineItems.addAll(list);
+                            currentPage = (data.current_page != null) ? data.current_page : page;
+                        }
 
-                                // pagination flags من السيرفر:
-                                if (data != null) {
-                                    currentPage = data.current_page != null ? data.current_page : page;
-                                    hasNextPage = data.next_page_url != null && !data.next_page_url.trim().isEmpty();
-                                } else {
-                                    currentPage = page;
-                                    // fallback من DB counts لاحقاً
-                                }
-                            });
-                        });
+                        hasNextPage = data.next_page_url != null && !data.next_page_url.trim().isEmpty();
+
+                        rebuildDisplayListOnlineMode(isReset);
                     }
 
                     @Override
                     public void onError(ApiError error) {
-                        // fallback: حتى لو السيرفر فشل، اعرض unified من DB
-                        loadUnifiedFromDb(customerIdInt, page, isReset, showDialog);
+                        isLoading = false;
+                        if (showDialog) hideProgressHUD();
+                        binding.swipeRefreshLayout.setRefreshing(false);
+                        toast(error != null ? error.message : getString(R.string.general_error));
                     }
 
                     @Override
                     public void onUnauthorized(String rawJson) {
+                        isLoading = false;
                         if (showDialog) hideProgressHUD();
                         binding.swipeRefreshLayout.setRefreshing(false);
-                        isLoading = false;
                         logout();
                     }
 
                     @Override
                     public void onNetworkError(String reason) {
-                        // fallback: unified from DB
-                        loadUnifiedFromDb(customerIdInt, page, isReset, showDialog);
+                        isLoading = false;
+                        if (showDialog) hideProgressHUD();
+                        binding.swipeRefreshLayout.setRefreshing(false);
+                        toast(R.string.no_internet);
                     }
 
                     @Override
                     public void onParseError(String rawJson, Exception e) {
-                        // fallback: unified from DB
-                        loadUnifiedFromDb(customerIdInt, page, isReset, showDialog);
+                        isLoading = false;
+                        if (showDialog) hideProgressHUD();
+                        binding.swipeRefreshLayout.setRefreshing(false);
+                        toast(getString(R.string.general_error));
                     }
                 }
         );
     }
 
-    /**
-     * ✅ DB Unified Feed:
-     * - UNION invoices + offline_invoices
-     */
-    private void loadUnifiedFromDb(int customerIdInt, int page, boolean isReset, boolean showDialog) {
+    private void fetchFuelSalesOffline(boolean showDialog, int page, boolean isReset) {
+        if (isLoading) return;
+
+        isLoading = true;
+        if (showDialog) showProgressHUD();
+        binding.swipeRefreshLayout.setRefreshing(!showDialog);
 
         final int offset = (page - 1) * pageSize;
 
         dbExecutor.execute(() -> {
-            List<UnifiedInvoiceRow> rows = new ArrayList<>();
+
+            if (customerIdInt < 0 || isOfflineCustomer) {
+                mainHandler.post(() -> {
+                    isLoading = false;
+                    if (showDialog) hideProgressHUD();
+                    binding.swipeRefreshLayout.setRefreshing(false);
+
+                    if (isReset) cachedItems.clear();
+                    currentPage = 1;
+                    hasNextPage = false;
+
+                    rebuildDisplayListOfflineMode();
+                    if (isCustomerMode) binding.amount.setText("0");
+                });
+                return;
+            }
+
             int total = 0;
-
-            try {
-                rows = repo.getUnifiedInvoicesByCustomerPaged(customerIdInt, isFuelSale, pageSize, offset);
-                total = repo.countUnifiedByCustomer(customerIdInt, isFuelSale);
-            } catch (Exception ignored) {}
-
             ArrayList<InvoiceDto> mapped = new ArrayList<>();
-            if (rows != null) {
-                for (UnifiedInvoiceRow r : rows) {
-                    mapped.add(mapUnifiedRowToInvoiceDto(r));
+
+            Integer cid = customerIdInt;
+
+            if (cid != null && cid != 0) {
+
+                List<co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite> rows =
+                        db.invoiceDao().getByCustomerAndTypePagedWithCustomer(cid, isFuelSale, pageSize, offset);
+
+                total = db.invoiceDao().countByCustomerAndType(cid, isFuelSale);
+
+                if (rows != null) {
+                    for (co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite r : rows) {
+                        mapped.add(mapInvoiceRowToDto(r));
+                    }
+                }
+
+                boolean hasMore = (offset + mapped.size()) < total;
+                final boolean finalHasMore = hasMore;
+
+                String headerText = "";
+                if (isCustomerMode) {
+
+                    Integer aidExtra = null;
+                    try {
+                        if (accountId != null && !accountId.trim().isEmpty()) {
+                            aidExtra = Integer.parseInt(accountId);
+                        }
+                    } catch (Exception ignored) {}
+
+                    List<InvoiceEntity> invoiceEntities = new ArrayList<>();
+                    if (rows != null) {
+                        for (co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite r : rows) {
+                            if (r != null && r.invoice != null) invoiceEntities.add(r.invoice);
+                        }
+                    }
+
+                    OfflineAccountSummary acc = getOfflineAccountSummary(aidExtra);
+
+                    Double headerBalance = null;
+                    try {
+                        if (acc.balance != null) headerBalance = acc.balance;
+                        else if (acc.credit != null && acc.depit != null) headerBalance = acc.credit - acc.depit;
+                    } catch (Exception ignored) {}
+
+                    headerText = (headerBalance != null) ? String.valueOf(headerBalance) : "0";
+                }
+
+                final String finalHeaderText = headerText;
+
+                mainHandler.post(() -> {
+                    isLoading = false;
+                    if (showDialog) hideProgressHUD();
+                    binding.swipeRefreshLayout.setRefreshing(false);
+
+                    if (isReset) {
+                        cachedItems.clear();
+                        cachedItems.addAll(mapped);
+                    } else {
+                        cachedItems.addAll(mapped);
+                    }
+
+                    currentPage = page;
+                    hasNextPage = finalHasMore;
+
+                    rebuildDisplayListOfflineMode();
+
+                    if (isCustomerMode) binding.amount.setText(finalHeaderText);
+                });
+
+                return;
+            }
+
+            List<co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite> rowsAll =
+                    db.invoiceDao().getByTypePagedWithCustomer(isFuelSale, pageSize, offset);
+
+            total = db.invoiceDao().countByType(isFuelSale);
+
+            if (rowsAll != null) {
+                for (co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite r : rowsAll) {
+                    mapped.add(mapInvoiceRowToDto(r));
                 }
             }
 
             boolean hasMore = (offset + mapped.size()) < total;
+            final boolean finalHasMore = hasMore;
 
             mainHandler.post(() -> {
+                isLoading = false;
                 if (showDialog) hideProgressHUD();
                 binding.swipeRefreshLayout.setRefreshing(false);
 
-                isLoading = false;
-
                 if (isReset) {
-                    displayItems.clear();
-                    displayItems.addAll(mapped);
+                    cachedItems.clear();
+                    cachedItems.addAll(mapped);
                 } else {
-                    displayItems.addAll(mapped);
+                    cachedItems.addAll(mapped);
                 }
-                adapter.notifyDataSetChanged();
 
                 currentPage = page;
-                // لو online وقرأنا hasNextPage من السيرفر خلّيه، otherwise من DB
-                if (!connectionAvailable) {
-                    hasNextPage = hasMore;
-                } else {
-                    // لو السيرفر ما رجّع next_page_url (أو انت بدك تحكم من DB)
-                    // يمكنك تختار:
-                    // hasNextPage = hasMore;
-                }
+                hasNextPage = finalHasMore;
+
+                rebuildDisplayListOfflineMode();
             });
         });
     }
 
-    // =========================
-    // Mapping
-    // =========================
-
-    private InvoiceDto mapUnifiedRowToInvoiceDto(UnifiedInvoiceRow r) {
+    private InvoiceDto mapOfflineEntityToDto(OfflineInvoiceEntity e) {
         InvoiceDto dto = new InvoiceDto();
 
-        if (r == null) return dto;
+        dto.is_offline = true;
+        dto.local_id = e.localId;
+        dto.sync_status = e.syncStatus;
+        dto.sync_error = e.syncError;
 
-        boolean isOffline = "OFFLINE".equalsIgnoreCase(r.source);
+        dto.id = e.onlineId != null ? e.onlineId : 0;
+        dto.account_id = e.accountId;
 
-        dto.is_offline = isOffline;
+        dto.statement = e.statement;
+        dto.invoice_no = (e.invoiceNo != null && !e.invoiceNo.trim().isEmpty())
+                ? e.invoiceNo
+                : ("OFF-" + e.localId);
 
-        if (isOffline) {
-            dto.local_id = (r.localId != null) ? r.localId : 0;
-            dto.sync_status = (r.syncStatus != null) ? r.syncStatus : 0;
-            dto.id = (r.onlineId != null) ? r.onlineId : 0;
+        dto.total = e.total;
+        dto.notes = e.notes;
 
-            dto.invoice_no = (r.invoiceNo != null && !r.invoiceNo.trim().isEmpty())
-                    ? r.invoiceNo
-                    : ("OFF-" + dto.local_id);
+        dto.date = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
+                .format(new java.util.Date(e.createdAtTs));
 
-            // تاريخ display من sortTs
-            dto.date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(new Date(r.sortTs));
-        } else {
-            dto.id = (r.onlineId != null) ? r.onlineId : 0;
-            dto.invoice_no = (r.invoiceNo != null) ? r.invoiceNo : "";
-            // تاريخ display غير موجود في row، ممكن نتركه فاضي أو نستخدم sortTs
-            dto.date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(new Date(r.sortTs));
-        }
-
-        dto.statement = r.statement;
-        dto.total = r.total;
+        if (dto.account == null) dto.account = new co.highfive.petrolstation.models.Account();
+        dto.account.setAccount_name(e.customerName != null ? e.customerName : "");
+        dto.account.setMobile(e.customerMobile != null ? e.customerMobile : "");
 
         return dto;
     }
 
-    private List<InvoiceEntity> mapServerInvoicesToEntities(List<InvoiceDto> list, int customerIdInt) {
-        ArrayList<InvoiceEntity> out = new ArrayList<>();
-        if (list == null) return out;
+    private InvoiceDto mapInvoiceRowToDto(co.highfive.petrolstation.data.local.dao.InvoiceWithCustomerLite r) {
+        InvoiceEntity e = r.invoice;
 
-        for (InvoiceDto d : list) {
-            if (d == null) continue;
+        InvoiceDto dto = new InvoiceDto();
+        dto.id = e.id;
+        dto.date = e.date;
+        dto.statement = e.statement;
+        dto.account_id = e.accountId;
+        dto.store_id = e.storeId;
+        dto.discount = e.discount;
+        dto.total = e.total;
+        dto.invoice_no = e.invoiceNo;
+        dto.notes = e.notes;
+        dto.campaign_id = e.campaignId;
+        dto.pump_id = e.pumpId;
+        dto.customer_vehicle_id = e.customerVehicleId;
+        dto.created_at = e.createdAt;
+        dto.is_fuel_sale = e.isFuelSale;
 
-            InvoiceEntity e = new InvoiceEntity();
-            e.id = d.id;
+        if (dto.account == null) dto.account = new co.highfive.petrolstation.models.Account();
+        dto.account.setAccount_name(r.customerName != null ? r.customerName : "");
+        dto.account.setMobile(r.customerMobile != null ? r.customerMobile : "");
 
-            // مهم: customerId
-            // إن كان السيرفر يرجع customer_id استخدمه، وإلا استخدم customerIdInt القادم من extras
-            try {
-                // لو عندك d.customer_id
-                // e.customerId = d.customer_id;
-                e.customerId = customerIdInt;
-            } catch (Exception ignored) {
-                e.customerId = customerIdInt;
-            }
-
-            e.date = d.date;
-            e.statement = d.statement;
-
-            e.accountId = d.account_id;
-            e.storeId = d.store_id;
-
-            e.discount = d.discount;
-            e.total = d.total;
-
-            e.invoiceNo = d.invoice_no;
-            e.notes = d.notes;
-
-            e.campaignId = d.campaign_id;
-            e.pumpId = d.pump_id;
-            e.customerVehicleId = d.customer_vehicle_id;
-
-            e.isFuelSale = 1;
-
-            e.createdAt = d.created_at;
-
-            // createdAtTs
-            e.createdAtTs = guessCreatedAtTs(d);
-            e.updatedAt = System.currentTimeMillis();
-
-            out.add(e);
-        }
-
-        return out;
-    }
-
-    private long guessCreatedAtTs(InvoiceDto d) {
-        // أفضل شيء: لو عندك server created_at بصيغة ثابتة
-        // جرّب parsing، وإلا fallback على الآن
-        try {
-            if (d == null) return System.currentTimeMillis();
-
-            String s = null;
-            try {
-                s = d.created_at; // موجود في mapInvoiceEntityToDto عندك
-            } catch (Exception ignored) {}
-
-            if (s == null || s.trim().isEmpty()) {
-                // fallback: حاول date
-                s = d.date;
-            }
-            if (s == null || s.trim().isEmpty()) return System.currentTimeMillis();
-
-            // عدّل الفورمات حسب اللي عندك من السيرفر
-            // أمثلة شائعة:
-            // 2026-01-25 12:30:10
-            // 2026-01-25T12:30:10.000Z
-            SimpleDateFormat f1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-            try {
-                Date dt = f1.parse(s);
-                if (dt != null) return dt.getTime();
-            } catch (ParseException ignored1) {}
-
-            SimpleDateFormat f2 = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-            try {
-                Date dt = f2.parse(s);
-                if (dt != null) return dt.getTime();
-            } catch (ParseException ignored2) {}
-
-            return System.currentTimeMillis();
-        } catch (Exception e) {
-            return System.currentTimeMillis();
-        }
+        return dto;
     }
 
     private void openInvoiceDetails(InvoiceDto inv) {
@@ -581,6 +580,7 @@ public class FuelSalesActivity extends BaseActivity {
         if (inv.is_offline) {
             b.putBoolean("is_offline", true);
             b.putLong("local_id", inv.local_id);
+
             b.putInt("sync_status", inv.sync_status);
             b.putString("sync_error", inv.sync_error);
 
@@ -605,16 +605,80 @@ public class FuelSalesActivity extends BaseActivity {
         moveToActivity(FuelSalesActivity.this, InvoiceDetailsActivity.class, b, false);
     }
 
-    private Integer safeInt(String s) {
-        try {
-            if (s == null) return null;
-            s = s.trim();
-            if (s.isEmpty()) return null;
-            return Integer.parseInt(s);
-        } catch (Exception e) {
-            return null;
+    private void sendOneOfflineInvoice(InvoiceDto inv) {
+        if (inv == null || !inv.is_offline || inv.local_id <= 0) {
+            toast("This invoice is not offline");
+            return;
         }
+
+        if (!connectionAvailable) {
+            toast(getString(R.string.no_internet));
+            return;
+        }
+
+        showProgressHUD();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Handler main = new Handler(Looper.getMainLooper());
+
+        ex.execute(() -> repo.syncOneInvoiceJson(inv.local_id, new InvoiceLocalRepository.SingleSyncListener() {
+
+            @Override
+            public void onSuccess() {
+                main.post(() -> {
+                    hideProgressHUD();
+                    toast(getString(R.string.done));
+                    fetchFuelSalesSmart(false, 1, true);
+                });
+            }
+
+            @Override
+            public void onFailed(@NonNull String errorMsg) {
+                main.post(() -> {
+                    hideProgressHUD();
+                    toast(errorMsg);
+                    fetchFuelSalesSmart(false, 1, true);
+                });
+            }
+
+            @Override
+            public void onNetwork(@NonNull String reason) {
+                main.post(() -> {
+                    hideProgressHUD();
+                    toast(getString(R.string.no_internet));
+                    fetchFuelSalesSmart(false, 1, true);
+                });
+            }
+        }));
     }
 
+    private static class OfflineAccountSummary {
+        String name = "";
+        Double balance = null;
+        Double credit = null;
+        Double depit = null;
+    }
 
+    private OfflineAccountSummary getOfflineAccountSummary(Integer accountIdFromExtras) {
+        OfflineAccountSummary s = new OfflineAccountSummary();
+
+        Integer aid = null;
+        try {
+            if (accountIdFromExtras != null && accountIdFromExtras > 0) {
+                aid = accountIdFromExtras;
+            }
+        } catch (Exception ignored) {}
+
+        if (aid == null || aid <= 0) return s;
+
+        try {
+            CustomerEntity ce = db.customerDao().getByAccountId(aid);
+            if (ce != null) {
+                if (ce.name != null) s.name = ce.name;
+                s.balance = ce.balance;
+            }
+        } catch (Exception ignored) {}
+
+        return s;
+    }
 }

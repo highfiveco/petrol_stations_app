@@ -1,25 +1,33 @@
 package co.highfive.petrolstation.activities;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import co.highfive.petrolstation.R;
 import co.highfive.petrolstation.adapters.CustomerVehiclesAdapter;
 import co.highfive.petrolstation.customers.dto.CustomerVehicleDto;
 import co.highfive.petrolstation.customers.dto.CustomerVehiclesResponseDto;
 import co.highfive.petrolstation.customers.dto.VehicleSettingsResponseDto;
+import co.highfive.petrolstation.data.local.AppDatabase;
+import co.highfive.petrolstation.data.local.DatabaseProvider;
+import co.highfive.petrolstation.data.local.entities.CustomerEntity;
+import co.highfive.petrolstation.data.local.entities.CustomerVehicleEntity;
 import co.highfive.petrolstation.data.local.entities.CustomersMetaCacheEntity;
 import co.highfive.petrolstation.databinding.ActivityCustomerVehiclesBinding;
 import co.highfive.petrolstation.fragments.AddVehicleDialog;
@@ -30,16 +38,6 @@ import co.highfive.petrolstation.network.ApiClient;
 import co.highfive.petrolstation.network.ApiError;
 import co.highfive.petrolstation.network.BaseResponse;
 import co.highfive.petrolstation.network.Endpoints;
-import android.os.Handler;
-import android.os.Looper;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import co.highfive.petrolstation.data.local.AppDatabase;
-import co.highfive.petrolstation.data.local.DatabaseProvider;
-import co.highfive.petrolstation.data.local.entities.CustomerEntity;
-import co.highfive.petrolstation.data.local.entities.CustomerVehicleEntity;
 
 public class CustomerVehiclesActivity extends BaseActivity {
 
@@ -53,13 +51,10 @@ public class CustomerVehiclesActivity extends BaseActivity {
     private final ArrayList<CustomerVehicleDto> items = new ArrayList<>();
     private CustomerVehiclesAdapter adapter;
 
-    // permissions
     private boolean canView = true;
     private boolean canAdd = true;
     private boolean canEdit = true;
-//    private boolean canDelete = true;
 
-    // cached settings
     private VehicleSettingsResponseDto cachedSettings = null;
     private AddVehicleDialog activeDialog = null;
 
@@ -67,8 +62,14 @@ public class CustomerVehiclesActivity extends BaseActivity {
     private ExecutorService dbExecutor;
     private Handler mainHandler;
 
-    // session key for settings json
     private static final String SESSION_KEY_VEHICLE_SETTINGS_JSON = "SESSION_KEY_VEHICLE_SETTINGS_JSON";
+    private VehicleSettingsResponseDto cachedVehicleSettings = null;
+
+    private boolean isOfflineCustomer = false;
+    private long offlineCustomerLocalId = 0;
+    private int customerIdInt = 0;
+
+    private CustomerVehicleDto lastEditVehicleRef = null;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -89,22 +90,30 @@ public class CustomerVehiclesActivity extends BaseActivity {
         initRefresh();
         initClicks();
 
-        // load vehicles directly on open
         fetchVehiclesSmart(true);
     }
 
     private void fetchVehiclesSmart(boolean showDialog) {
         if (connectionAvailable) {
-            fetchVehiclesOnline(showDialog);   // API
+            fetchVehiclesOnline(showDialog);
         } else {
-            fetchVehiclesOffline(showDialog);  // Room
+            fetchVehiclesOffline(showDialog);
         }
     }
-
 
     private void readExtras() {
         Bundle extras = getIntent() != null ? getIntent().getExtras() : null;
         if (extras == null) return;
+
+        isOfflineCustomer = extras.getBoolean("is_offline", false);
+        String tempCustomerId = extras.getString("offline_local_id", null);
+        if (tempCustomerId != null) {
+            try { offlineCustomerLocalId = Long.parseLong(tempCustomerId); } catch (Exception ignored) {}
+        }
+
+        String cidStr = safe(extras.getString("customer_id"));
+        if (cidStr.trim().isEmpty()) cidStr = safe(extras.getString("id"));
+        try { customerIdInt = Integer.parseInt(cidStr); } catch (Exception ignored) { customerIdInt = 0; }
 
         customerId = safe(extras.getString("id"));
         accountId = safe(extras.getString("account_id"));
@@ -121,7 +130,6 @@ public class CustomerVehiclesActivity extends BaseActivity {
             if (!customerMobile.trim().isEmpty()) call(customerMobile);
         });
 
-        // hide add button until permissions loaded
         binding.icAddWhite.setVisibility(View.GONE);
     }
 
@@ -133,8 +141,6 @@ public class CustomerVehiclesActivity extends BaseActivity {
 
         binding.icAddWhite.setOnClickListener(v -> {
             if (!canAdd) return;
-
-            // fetch settings then open add dialog
             fetchVehicleSettingsThenOpenDialog(null);
         });
     }
@@ -142,8 +148,6 @@ public class CustomerVehiclesActivity extends BaseActivity {
     private void initRecycler() {
         adapter = new CustomerVehiclesAdapter(items, v -> {
             if (!canEdit) return;
-
-            // fetch settings then open edit dialog with data
             fetchVehicleSettingsThenOpenDialog(v);
         });
 
@@ -155,9 +159,6 @@ public class CustomerVehiclesActivity extends BaseActivity {
         binding.swipeRefreshLayout.setOnRefreshListener(() -> fetchVehiclesSmart(false));
     }
 
-    // ============================================================
-    // Vehicles List API
-    // ============================================================
     private void fetchVehiclesOnline(boolean showDialog) {
         if (customerId.trim().isEmpty()) {
             toast(getString(R.string.general_error));
@@ -194,7 +195,6 @@ public class CustomerVehiclesActivity extends BaseActivity {
                         canView = data.view_customer_vehicles == 1;
                         canAdd = data.add_customer_vehicles == 1;
                         canEdit = data.edit_customer_vehicles == 1;
-//                        canDelete = data.delete_customer_vehicles == 1;
 
                         binding.icAddWhite.setVisibility(canAdd ? View.VISIBLE : View.GONE);
                         adapter.setCanEdit(canEdit);
@@ -206,11 +206,8 @@ public class CustomerVehiclesActivity extends BaseActivity {
                             if (!n.isEmpty()) binding.name.setText(n);
                             if (!m.isEmpty()) binding.phone.setText(m);
 
-                            try {
-                                binding.amount.setText(formatNumber(data.customer.balance));
-                            } catch (Exception ignored) {
-                                binding.amount.setText("");
-                            }
+                            try { binding.amount.setText(formatNumber(data.customer.balance)); }
+                            catch (Exception ignored) { binding.amount.setText(""); }
                         }
 
                         if (!canView) {
@@ -257,36 +254,85 @@ public class CustomerVehiclesActivity extends BaseActivity {
 
     private void fetchVehiclesOffline(boolean showDialog) {
 
-        if (customerId.trim().isEmpty()) {
-            toast(getString(R.string.general_error));
-            return;
+        if (isOfflineCustomer) {
+            if (offlineCustomerLocalId <= 0) {
+                toast(getString(R.string.general_error));
+                return;
+            }
+        } else {
+            if (customerId.trim().isEmpty()) {
+                toast(getString(R.string.general_error));
+                return;
+            }
         }
 
         if (showDialog) showProgressHUD();
         binding.swipeRefreshLayout.setRefreshing(!showDialog);
 
         final int cid;
-        try {
-            cid = Integer.parseInt(customerId);
-        } catch (Exception e) {
-            if (showDialog) hideProgressHUD();
-            binding.swipeRefreshLayout.setRefreshing(false);
-            toast(getString(R.string.general_error));
-            return;
+        if (!isOfflineCustomer) {
+            try { cid = Integer.parseInt(customerId); }
+            catch (Exception e) {
+                if (showDialog) hideProgressHUD();
+                binding.swipeRefreshLayout.setRefreshing(false);
+                toast(getString(R.string.general_error));
+                return;
+            }
+        } else {
+            cid = 0;
         }
 
         dbExecutor.execute(() -> {
-            // ✅ اقرأ الصلاحيات من meta
+
             CustomersMetaCacheEntity meta = db.customersMetaDao().getOne();
 
-            // ✅ اقرأ بيانات الزبون + المركبات
-            List<CustomerVehicleEntity> rows = db.customerVehicleDao().getByCustomer(cid);
-            CustomerEntity customer = db.customerDao().getById(cid);
+            CustomerEntity customer = null;
+            if (!isOfflineCustomer) {
+                customer = db.customerDao().getById(cid);
+            }
+            final CustomerEntity finalCustomer = customer;
 
-            ArrayList<CustomerVehicleDto> list = new ArrayList<>();
-            if (rows != null) {
-                for (CustomerVehicleEntity ve : rows) {
-                    list.add(mapVehicleEntityToDto(ve));
+            ArrayList<CustomerVehicleDto> finalList = new ArrayList<>();
+
+            if (!isOfflineCustomer) {
+                List<CustomerVehicleEntity> onlineRows = db.customerVehicleDao().getByCustomer(cid);
+                if (onlineRows != null) {
+                    for (CustomerVehicleEntity ve : onlineRows) {
+                        finalList.add(mapVehicleEntityToDto(ve));
+                    }
+                }
+
+                List<co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity> addedOffline =
+                        db.offlineCustomerVehicleDao().getByCustomer(cid);
+
+                if (addedOffline != null) {
+                    for (co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity oe : addedOffline) {
+                        finalList.add(mapOfflineVehicleEntityToDto(oe));
+                    }
+                }
+
+                List<co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEditEntity> edits =
+                        db.offlineCustomerVehicleEditDao().getByCustomer(cid);
+
+                if (edits != null && !edits.isEmpty()) {
+                    applyEditsOverlay(finalList, edits);
+                }
+
+            } else {
+                List<co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity> addedOffline =
+                        db.offlineCustomerVehicleDao().getByOfflineCustomerLocalId(offlineCustomerLocalId);
+
+                if (addedOffline != null) {
+                    for (co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity oe : addedOffline) {
+                        finalList.add(mapOfflineVehicleEntityToDto(oe));
+                    }
+                }
+
+                List<co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEditEntity> edits =
+                        db.offlineCustomerVehicleEditDao().getByOfflineCustomerLocalId(offlineCustomerLocalId);
+
+                if (edits != null && !edits.isEmpty()) {
+                    applyEditsOverlay(finalList, edits);
                 }
             }
 
@@ -294,32 +340,26 @@ public class CustomerVehiclesActivity extends BaseActivity {
                 if (showDialog) hideProgressHUD();
                 binding.swipeRefreshLayout.setRefreshing(false);
 
-                // ✅ طبّق الصلاحيات
                 applyVehiclePermissionsFromMeta(meta);
 
-                // header من Room
-                if (customer != null) {
-                    String n = safe(customer.name);
-                    String m = safe(customer.mobile);
+                if (finalCustomer != null) {
+                    String n = safe(finalCustomer.name);
+                    String m = safe(finalCustomer.mobile);
 
                     if (!n.isEmpty()) binding.name.setText(n);
                     if (!m.isEmpty()) binding.phone.setText(m);
 
-                    try {
-                        binding.amount.setText(formatNumber(customer.balance));
-                    } catch (Exception ignored) {
-                        binding.amount.setText("");
-                    }
+                    try { binding.amount.setText(formatNumber(finalCustomer.balance)); }
+                    catch (Exception ignored) { binding.amount.setText(""); }
                 }
 
-                // ✅ لو ما عنده view permission
                 if (!canView) {
                     adapter.setItems(new ArrayList<>());
                     toast(getString(R.string.general_error));
                     return;
                 }
 
-                adapter.setItems(list);
+                adapter.setItems(finalList);
             });
         });
     }
@@ -341,35 +381,81 @@ public class CustomerVehiclesActivity extends BaseActivity {
         return v;
     }
 
+    private CustomerVehicleDto mapOfflineVehicleEntityToDto(co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity e) {
+        CustomerVehicleDto v = new CustomerVehicleDto();
+        v.id = (int) (-e.localId);
+        v.customer_id = e.customerId;
+        v.customer_local_id = e.offlineCustomerLocalId;
+        v.vehicle_number = e.vehicleNumber;
+        v.vehicle_type = e.vehicleType;
+        v.vehicle_color = e.vehicleColor;
+        v.model = e.model;
+        v.license_expiry_date = e.licenseExpiryDate;
+        v.notes = e.notes;
+        v.vehicle_type_name = e.vehicleTypeName;
+        v.vehicle_color_name = e.vehicleColorName;
+        v.account_id = e.accountId != null ? e.accountId : 0;
+        return v;
+    }
 
-    // ============================================================
-    // Settings -> session fallback -> open dialog
-    // editVehicle == null => add mode
-    // ============================================================
+    private void applyEditsOverlay(@NonNull ArrayList<CustomerVehicleDto> baseList,
+                                   @NonNull List<co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEditEntity> edits) {
+        for (co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEditEntity ed : edits) {
+            if (ed == null) continue;
+            for (int i = 0; i < baseList.size(); i++) {
+                CustomerVehicleDto v = baseList.get(i);
+                if (v == null) continue;
+
+                boolean match = false;
+
+                if (ed.targetOnlineVehicleId != null && ed.targetOnlineVehicleId > 0) {
+                    match = (v.id == ed.targetOnlineVehicleId);
+                } else if (ed.targetLocalVehicleId != null && ed.targetLocalVehicleId > 0) {
+                    int localAsNegativeId = (int) (-ed.targetLocalVehicleId.longValue());
+                    match = (v.id == localAsNegativeId);
+                }
+
+                if (!match) continue;
+
+                if (ed.vehicleNumber != null) v.vehicle_number = ed.vehicleNumber;
+                if (ed.model != null) v.model = ed.model;
+                if (ed.licenseExpiryDate != null) v.license_expiry_date = ed.licenseExpiryDate;
+                if (ed.notes != null) v.notes = ed.notes;
+
+                if (ed.vehicleType != null) v.vehicle_type = ed.vehicleType;
+                if (ed.vehicleColor != null) v.vehicle_color = ed.vehicleColor;
+
+                if (ed.vehicleTypeName != null) v.vehicle_type_name = ed.vehicleTypeName;
+                if (ed.vehicleColorName != null) v.vehicle_color_name = ed.vehicleColorName;
+
+                baseList.set(i, v);
+                break;
+            }
+        }
+    }
+
     private void fetchVehicleSettingsThenOpenDialog(@Nullable CustomerVehicleDto editVehicle) {
 
-        // 1) if already cached in memory, open immediately
+        lastEditVehicleRef = editVehicle;
+
         if (cachedSettings != null) {
+            cachedVehicleSettings = cachedSettings;
             openAddEditVehicleDialog(editVehicle, cachedSettings);
             return;
         }
 
-        // 2) try session first (fast)
         VehicleSettingsResponseDto fromSession = readVehicleSettingsFromSession();
         if (fromSession != null) {
             cachedSettings = fromSession;
-            // still try API to refresh if internet is available,
-            // but open dialog now based on session
+            cachedVehicleSettings = fromSession;
             openAddEditVehicleDialog(editVehicle, cachedSettings);
-
-            // refresh silently from api
             fetchVehicleSettingsFromApi(false, null);
             return;
         }
 
-        // 3) no session => must call API (show loading)
         fetchVehicleSettingsFromApi(true, () -> {
             if (cachedSettings != null) {
+                cachedVehicleSettings = cachedSettings;
                 openAddEditVehicleDialog(editVehicle, cachedSettings);
             } else {
                 toast(getString(R.string.general_error));
@@ -377,9 +463,6 @@ public class CustomerVehiclesActivity extends BaseActivity {
         });
     }
 
-    // ============================================================
-    // Settings API
-    // ============================================================
     private void fetchVehicleSettingsFromApi(boolean showDialog, @Nullable Runnable onReady) {
 
         if (showDialog) showProgressHUD();
@@ -406,8 +489,10 @@ public class CustomerVehiclesActivity extends BaseActivity {
 
                         if (data != null) {
                             cachedSettings = data;
+                            cachedVehicleSettings = data;
                         } else {
                             cachedSettings = readVehicleSettingsFromSession();
+                            cachedVehicleSettings = cachedSettings;
                         }
 
                         if (onReady != null) onReady.run();
@@ -418,6 +503,8 @@ public class CustomerVehiclesActivity extends BaseActivity {
                         if (showDialog) hideProgressHUD();
 
                         cachedSettings = readVehicleSettingsFromSession();
+                        cachedVehicleSettings = cachedSettings;
+
                         if (cachedSettings == null) {
                             toast(error != null ? error.message : getString(R.string.general_error));
                         }
@@ -436,6 +523,8 @@ public class CustomerVehiclesActivity extends BaseActivity {
                         if (showDialog) hideProgressHUD();
 
                         cachedSettings = readVehicleSettingsFromSession();
+                        cachedVehicleSettings = cachedSettings;
+
                         if (cachedSettings == null) toast(R.string.no_internet);
 
                         if (onReady != null) onReady.run();
@@ -446,6 +535,8 @@ public class CustomerVehiclesActivity extends BaseActivity {
                         if (showDialog) hideProgressHUD();
 
                         cachedSettings = readVehicleSettingsFromSession();
+                        cachedVehicleSettings = cachedSettings;
+
                         if (cachedSettings == null) {
                             errorLogger("VehicleSettingsParseError", e.getMessage() == null ? "null" : e.getMessage());
                             toast(getString(R.string.general_error));
@@ -462,7 +553,6 @@ public class CustomerVehiclesActivity extends BaseActivity {
             String raw = getSessionManager().getString(SESSION_KEY_VEHICLE_SETTINGS_JSON);
             if (raw == null || raw.trim().isEmpty()) return null;
 
-            // session contains BaseResponse<VehicleSettingsResponseDto>
             Type type = new TypeToken<BaseResponse<VehicleSettingsResponseDto>>() {}.getType();
             BaseResponse<VehicleSettingsResponseDto> base = getGson().fromJson(raw, type);
             if (base != null && base.status) return base.data;
@@ -471,16 +561,13 @@ public class CustomerVehiclesActivity extends BaseActivity {
         return null;
     }
 
-    // ============================================================
-    // Dialog open (UI only) + Activity handles requests later
-    // ============================================================
     private void openAddEditVehicleDialog(@Nullable CustomerVehicleDto editVehicle,
                                           @NonNull VehicleSettingsResponseDto settings) {
 
         activeDialog = AddVehicleDialog.newInstance(
                 safe(customerId),
-                editVehicle,          // null => add mode
-                settings              // contains vehicle_type, vehicle_color, model (assumed)
+                editVehicle,
+                settings
         );
 
         activeDialog.setCancelable(false);
@@ -488,31 +575,30 @@ public class CustomerVehiclesActivity extends BaseActivity {
         activeDialog.setListener(new AddVehicleDialog.Listener() {
             @Override
             public void onSubmitAdd(Map<String, String> payload) {
-                // Activity handles add request
                 submitAddVehicle(payload);
             }
 
             @Override
             public void onSubmitEdit(Map<String, String> payload) {
-                // Activity handles update request
                 submitUpdateVehicle(payload);
             }
 
             @Override
             public void onDismissed() {
-
             }
         });
 
         activeDialog.show(getSupportFragmentManager(), "AddVehicleDialog");
     }
 
-    // ============================================================
-    // Add / Update requests are in Activity (as you requested)
-    // ============================================================
     private void submitAddVehicle(Map<String, String> payload) {
         if (payload == null) {
             toast(getString(R.string.general_error));
+            return;
+        }
+
+        if (!connectionAvailable) {
+            saveVehicleOffline(payload);
             return;
         }
 
@@ -533,7 +619,7 @@ public class CustomerVehiclesActivity extends BaseActivity {
                         hideProgressHUD();
                         if (activeDialog != null) activeDialog.dismissAllowingStateLoss();
                         toast(msg != null && !msg.trim().isEmpty() ? msg : getString(R.string.done));
-                        fetchVehiclesSmart(true); // refresh list
+                        fetchVehiclesSmart(true);
                     }
 
                     @Override
@@ -564,9 +650,84 @@ public class CustomerVehiclesActivity extends BaseActivity {
         );
     }
 
+    private void saveVehicleOffline(@NonNull Map<String, String> payload) {
+
+        showProgressHUD();
+
+        dbExecutor.execute(() -> {
+            try {
+                long now = System.currentTimeMillis();
+
+                co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity e =
+                        new co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity();
+
+                if (isOfflineCustomer) {
+                    e.offlineCustomerLocalId = offlineCustomerLocalId;
+                    e.customerId = 0;
+                    e.accountId = null;
+                } else {
+                    e.customerId = Integer.parseInt(customerId);
+                    try { e.accountId = Integer.parseInt(accountId); } catch (Exception ignored) { e.accountId = null; }
+                }
+
+                e.vehicleNumber = safe(payload.get("vehicle_number"));
+                e.model = safe(payload.get("model"));
+                e.licenseExpiryDate = safe(payload.get("license_expiry_date"));
+                e.notes = safe(payload.get("notes"));
+
+                try { e.vehicleType = Integer.parseInt(payload.get("vehicle_type")); } catch (Exception ignored) { e.vehicleType = null; }
+                try { e.vehicleColor = Integer.parseInt(payload.get("vehicle_color")); } catch (Exception ignored) { e.vehicleColor = null; }
+
+                try {
+                    if (cachedVehicleSettings != null) {
+                        if (e.vehicleType != null) {
+                            e.vehicleTypeName = resolveSimpleSettingName(cachedVehicleSettings.vehicle_type, e.vehicleType);
+                        }
+                        if (e.vehicleColor != null) {
+                            e.vehicleColorName = resolveSimpleSettingName(cachedVehicleSettings.vehicle_color, e.vehicleColor);
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                e.syncStatus = 0;
+                e.syncError = null;
+                e.createdAtTs = now;
+                e.updatedAtTs = now;
+
+                e.requestJson = null;
+
+                long localId = db.offlineCustomerVehicleDao().insert(e);
+                e.localId = localId;
+                e.requestJson = buildOfflineVehicleRequestJson(e, payload);
+                db.offlineCustomerVehicleDao().update(e);
+
+                mainHandler.post(() -> {
+                    hideProgressHUD();
+                    if (activeDialog != null) {
+                        activeDialog.dismissAllowingStateLoss();
+                        activeDialog = null;
+                    }
+                    toast("تم حفظ المركبة (أوفلاين)");
+                    fetchVehiclesOffline(false);
+                });
+
+            } catch (Exception ex) {
+                mainHandler.post(() -> {
+                    hideProgressHUD();
+                    toast(getString(R.string.general_error));
+                });
+            }
+        });
+    }
+
     private void submitUpdateVehicle(Map<String, String> payload) {
         if (payload == null) {
             toast(getString(R.string.general_error));
+            return;
+        }
+
+        if (!connectionAvailable) {
+            saveVehicleEditOffline(payload, lastEditVehicleRef);
             return;
         }
 
@@ -618,25 +779,123 @@ public class CustomerVehiclesActivity extends BaseActivity {
         );
     }
 
-    // ============================================================
-    // Utils
-    // ============================================================
+    private void saveVehicleEditOffline(@NonNull Map<String, String> payload, @Nullable CustomerVehicleDto editedRef) {
+
+        if (editedRef == null) {
+            toast(getString(R.string.general_error));
+            return;
+        }
+
+        showProgressHUD();
+
+        dbExecutor.execute(() -> {
+            try {
+                long now = System.currentTimeMillis();
+
+                co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEditEntity ed =
+                        new co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEditEntity();
+
+                if (isOfflineCustomer) {
+                    ed.offlineCustomerLocalId = offlineCustomerLocalId;
+                    ed.customerId = 0;
+                } else {
+                    try { ed.customerId = Integer.parseInt(customerId); } catch (Exception ignored) { ed.customerId = 0; }
+                    ed.offlineCustomerLocalId = 0;
+                }
+
+                Integer onlineId = null;
+                Long localId = null;
+
+                if (editedRef.id > 0) {
+                    onlineId = editedRef.id;
+                } else if (editedRef.id < 0) {
+                    localId = (long) (-editedRef.id);
+                }
+
+                ed.targetOnlineVehicleId = onlineId;
+                ed.targetLocalVehicleId = localId;
+
+                ed.vehicleNumber = safe(payload.get("vehicle_number"));
+                ed.model = safe(payload.get("model"));
+                ed.licenseExpiryDate = safe(payload.get("license_expiry_date"));
+                ed.notes = safe(payload.get("notes"));
+
+                try { ed.vehicleType = Integer.parseInt(payload.get("vehicle_type")); } catch (Exception ignored) { ed.vehicleType = null; }
+                try { ed.vehicleColor = Integer.parseInt(payload.get("vehicle_color")); } catch (Exception ignored) { ed.vehicleColor = null; }
+
+                try {
+                    if (cachedVehicleSettings != null) {
+                        if (ed.vehicleType != null) {
+                            ed.vehicleTypeName = resolveSimpleSettingName(cachedVehicleSettings.vehicle_type, ed.vehicleType);
+                        }
+                        if (ed.vehicleColor != null) {
+                            ed.vehicleColorName = resolveSimpleSettingName(cachedVehicleSettings.vehicle_color, ed.vehicleColor);
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                ed.syncStatus = 0;
+                ed.syncError = null;
+                ed.createdAtTs = now;
+                ed.updatedAtTs = now;
+
+                db.offlineCustomerVehicleEditDao().upsertByTarget(ed);
+
+                mainHandler.post(() -> {
+                    hideProgressHUD();
+                    if (activeDialog != null) {
+                        activeDialog.dismissAllowingStateLoss();
+                        activeDialog = null;
+                    }
+                    toast("تم تعديل المركبة (أوفلاين)");
+                    fetchVehiclesOffline(false);
+                });
+
+            } catch (Exception ex) {
+                mainHandler.post(() -> {
+                    hideProgressHUD();
+                    toast(getString(R.string.general_error));
+                });
+            }
+        });
+    }
+
+    private String buildOfflineVehicleRequestJson(
+            co.highfive.petrolstation.data.local.entities.OfflineCustomerVehicleEntity e,
+            Map<String, String> payload
+    ) {
+        try {
+            Map<String, Object> root = new HashMap<>();
+            root.put("local_id", e.localId);
+            root.put("customer_id", e.customerId);
+            root.put("offline_customer_local_id", e.offlineCustomerLocalId);
+            root.put("payload", payload);
+            return getGson().toJson(root);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String resolveSimpleSettingName(List<co.highfive.petrolstation.customers.dto.SimpleSettingDto> list, Integer id) {
+        if (list == null || id == null) return "";
+        for (co.highfive.petrolstation.customers.dto.SimpleSettingDto s : list) {
+            if (s != null && s.id == id) return s.name != null ? s.name : "";
+        }
+        return "";
+    }
 
     private void applyVehiclePermissionsFromMeta(@Nullable CustomersMetaCacheEntity meta) {
         if (meta == null) {
-            canView = true;   // أو false حسب رغبتك
-            canAdd  = false;
+            canView = true;
+            canAdd = false;
             canEdit = false;
         } else {
             canView = safeInt(meta.viewCustomerVehicles) == 1;
-            canAdd  = safeInt(meta.addCustomerVehicles) == 1;
+            canAdd = safeInt(meta.addCustomerVehicles) == 1;
             canEdit = safeInt(meta.editCustomerVehicles) == 1;
         }
 
         binding.icAddWhite.setVisibility(canAdd ? View.VISIBLE : View.GONE);
         if (adapter != null) adapter.setCanEdit(canEdit);
     }
-
-
-
 }

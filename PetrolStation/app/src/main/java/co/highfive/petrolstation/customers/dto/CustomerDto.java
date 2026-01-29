@@ -35,4 +35,10 @@ public class CustomerDto {
 
     @SerializedName("asseal_no")
     public String asseal_no;
+
+    @SerializedName("currency_name")
+    public String currency_name;
+
+    @SerializedName("account_currency")
+    public String account_currency;
 }

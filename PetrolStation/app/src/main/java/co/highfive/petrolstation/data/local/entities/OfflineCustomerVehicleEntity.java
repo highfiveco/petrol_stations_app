@@ -1,5 +1,6 @@
 package co.highfive.petrolstation.data.local.entities;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
@@ -40,4 +41,7 @@ public class OfflineCustomerVehicleEntity {
 
     public long createdAtTs;
     public long updatedAtTs;
+
+    @ColumnInfo(name = "offline_customer_local_id")
+    public long offlineCustomerLocalId;
 }

@@ -700,6 +700,8 @@ public class MainActivity extends BaseActivity {
             ce.remainingAmount = c.remaining_amount;
             ce.address = c.address;
             ce.assealNo = c.asseal_no;
+            ce.currencyName = c.currency_name;
+            ce.accountCurrency = c.account_currency;
 
             customers.add(ce);
 

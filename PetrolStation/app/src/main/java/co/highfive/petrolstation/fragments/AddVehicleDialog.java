@@ -103,7 +103,16 @@ public class AddVehicleDialog extends DialogFragment {
     }
 
     private boolean isEditMode() {
+        // أي مركبة وصلت للديلوج = تعديل (حتى لو أوفلاين id سالب)
+        return editVehicle != null;
+    }
+
+    private boolean isOnlineEdit() {
         return editVehicle != null && editVehicle.id > 0;
+    }
+
+    private boolean isOfflineEdit() {
+        return editVehicle != null && editVehicle.id < 0;
     }
 
     @Nullable
@@ -195,7 +204,6 @@ public class AddVehicleDialog extends DialogFragment {
     private Map<String, String> buildPayload() {
         Map<String, String> m = new HashMap<>();
 
-        // Required
         m.put("customer_id", safe(customerId));
         m.put("vehicle_number", safeTrim(binding.vehicleNumber.getText()));
         m.put("vehicle_type", String.valueOf(selectedVehicleTypeId != null ? selectedVehicleTypeId : 0));
@@ -204,13 +212,20 @@ public class AddVehicleDialog extends DialogFragment {
         m.put("license_expiry_date", safeTrim(binding.vehicleLicenseExpiryDate.getText()));
         m.put("notes", safeTrim(binding.notes.getText()));
 
-        // Edit needs id
+        // identifiers for edit
         if (isEditMode()) {
-            m.put("id", String.valueOf(editVehicle.id));
+            if (isOnlineEdit()) {
+                m.put("id", String.valueOf(editVehicle.id));
+            } else if (isOfflineEdit()) {
+                // عندك id سالب = localId الحقيقي هو القيمة المطلقة
+                long localId = (long) (-editVehicle.id);
+                m.put("local_id", String.valueOf(localId));
+            }
         }
 
         return m;
     }
+
     private int[] parseYmd(String ymd) {
         try {
             // yyyy-MM-dd
