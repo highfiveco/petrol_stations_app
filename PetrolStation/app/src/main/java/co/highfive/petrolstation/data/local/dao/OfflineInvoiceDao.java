@@ -41,5 +41,18 @@ OfflineInvoiceDao {
     @Query("SELECT * FROM offline_invoices WHERE customerId = :customerId AND isFuelSale = :isFuelSale AND syncStatus IN (0,2) ORDER BY createdAtTs DESC")
     List<OfflineInvoiceEntity> getPendingByCustomerAndType(int customerId, int isFuelSale);
 
+    // ✅ Pending by type (POS=0 / FuelSale=1)
+    @Query("SELECT * FROM offline_invoices WHERE syncStatus = 0 AND isFuelSale = :isFuelSale ORDER BY createdAtTs ASC LIMIT :limit")
+    List<OfflineInvoiceEntity> getPendingByTypePendingOnly(int isFuelSale, int limit);
+
+    // ✅ Count pending by type
+    @Query("SELECT COUNT(*) FROM offline_invoices WHERE syncStatus = 0 AND isFuelSale = :isFuelSale")
+    int countPendingByType(int isFuelSale);
+
+    // ✅ Mark status (SENT / FAILED)
+    @Query("UPDATE offline_invoices SET syncStatus = :newStatus, syncError = :syncError, updatedAtTs = :ts WHERE localId IN (:ids)")
+    int markStatusByIds(List<Long> ids, int newStatus, String syncError, long ts);
+
+
 
 }

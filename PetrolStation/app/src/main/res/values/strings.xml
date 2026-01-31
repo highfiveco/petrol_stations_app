@@ -345,5 +345,8 @@
     <string name="categories">التصنيفات</string>
     <string name="all">الكل</string>
     <string name="update_items">تحديث المنتجات</string>
+    <string name="sync_fuel_sale">مزامنة حركات التعبئة</string>
+    <string name="sync_pos">مزامنة نقطة البيع</string>
+    <string name="sync_customer_vehicles">مزامنة مركبات الزبائن</string>
 
 </resources>

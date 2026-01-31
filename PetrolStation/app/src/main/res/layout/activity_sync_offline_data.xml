@@ -1,0 +1,931 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:background="@color/white">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="match_parent"
+            android:layout_height="130dp"
+            android:src="@drawable/header_bg"
+            android:scaleType="fitXY"/>
+
+        <RelativeLayout
+            android:id="@+id/icons_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="26dp"
+            android:layout_marginLeft="26dp"
+            android:layout_marginTop="26dp" >
+
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="@string/sync_offline_data"
+                android:fontFamily="@font/din_regular"
+                android:textSize="20sp"
+                android:includeFontPadding="false"
+                android:textColor="@color/white"/>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_centerVertical="true"
+                android:layout_alignParentLeft="true">
+
+                <RelativeLayout
+                    android:id="@+id/ic_home"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:padding="8dp">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_home"/>
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/ic_back"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:padding="8dp">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_back_white"/>
+
+                </RelativeLayout>
+
+            </LinearLayout>
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingRight="16dp"
+        android:paddingLeft="16dp"
+        android:paddingBottom="16dp">
+
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/no_data_to_sync"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/no_data_to_sync"
+            android:textSize="25sp"
+            android:textColor="@color/colorAccent"
+            android:visibility="gone"
+            android:gravity="center"
+            android:fontFamily="@font/din_medium"
+            android:layout_centerInParent="true"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/bottom_layout"
+            android:layout_marginBottom="20dp"
+            android:orientation="vertical">
+
+            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                android:id="@+id/swipeRefreshLayout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="8dp">
+
+
+                <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fillViewport="true"
+                    android:fitsSystemWindows="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:id="@+id/sync_phone_updates_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:layout_toRightOf="@+id/sync_phone_updates_counter"
+                                    android:layout_centerVertical="true"
+                                    android:layout_marginLeft="16dp"
+                                    android:orientation="horizontal">
+
+
+                                    <com.tuyenmonkey.mkloader.MKLoader
+                                        android:id="@+id/loader_sync_phone_updates"
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        app:mk_type="Whirlpool"
+                                        android:visibility="invisible"
+                                        android:layout_marginRight="16dp"
+                                        app:mk_color="#000000"
+                                        />
+
+                                    <androidx.appcompat.widget.AppCompatImageView
+                                        android:id="@+id/ic_sync_phone_updates"
+                                        android:layout_width="20dp"
+                                        android:layout_marginRight="16dp"
+                                        android:layout_height="20dp"
+                                        android:scaleType="center"
+                                        android:visibility="gone"
+                                        android:background="@drawable/ic_true"/>
+
+                                    <androidx.appcompat.widget.AppCompatTextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/sync_phone_updates"
+                                        android:textSize="16sp"
+                                        android:textColor="#1F1F39"
+                                        android:layout_marginLeft="16dp"
+                                        android:layout_marginRight="16dp"
+                                        android:fontFamily="@font/din_medium"/>
+
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_phone_updates_counter"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0/0"
+                                    android:fontFamily="@font/din_medium"
+                                    android:layout_centerVertical="true"
+                                    android:layout_alignParentLeft="true"
+                                    android:textSize="16sp"/>
+
+
+                            </RelativeLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="16dp"
+                                android:gravity="center">
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_phone_updates"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:layout_marginLeft="10dp"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/sync"/>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/view_json_phone_updates"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:layout_marginRight="10dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/view_json"/>
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/sync_customer_vehicles_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <RelativeLayout
+
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:layout_toRightOf="@+id/sync_customer_vehicles_counter"
+                                    android:layout_centerVertical="true"
+                                    android:layout_marginLeft="16dp"
+                                    android:orientation="horizontal">
+
+                                    <com.tuyenmonkey.mkloader.MKLoader
+                                        android:id="@+id/loader_sync_customer_vehicles"
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        app:mk_type="Whirlpool"
+                                        android:visibility="invisible"
+                                        android:layout_marginRight="16dp"
+                                        app:mk_color="#000000"
+                                        />
+
+                                    <androidx.appcompat.widget.AppCompatImageView
+                                        android:id="@+id/ic_sync_customer_vehicles"
+                                        android:layout_width="20dp"
+                                        android:layout_marginRight="16dp"
+                                        android:layout_height="20dp"
+                                        android:scaleType="center"
+                                        android:visibility="gone"
+                                        android:background="@drawable/ic_true"/>
+
+                                    <androidx.appcompat.widget.AppCompatTextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/sync_customer_vehicles"
+                                        android:textSize="16sp"
+                                        android:textColor="#1F1F39"
+                                        android:layout_marginLeft="16dp"
+                                        android:layout_marginRight="16dp"
+                                        android:fontFamily="@font/din_medium"/>
+
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_customer_vehicles_counter"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0/0"
+                                    android:fontFamily="@font/din_medium"
+                                    android:layout_centerVertical="true"
+                                    android:layout_alignParentLeft="true"
+                                    android:textSize="16sp"/>
+
+
+                            </RelativeLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="16dp"
+                                android:gravity="center">
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_customer_vehicles"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:layout_marginLeft="10dp"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/sync"/>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/view_json_customer_vehicles"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:layout_marginRight="10dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/view_json"/>
+
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/sync_fuel_sale_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <RelativeLayout
+
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:layout_toRightOf="@+id/sync_fuel_sale_counter"
+                                    android:layout_centerVertical="true"
+                                    android:layout_marginLeft="16dp"
+                                    android:orientation="horizontal">
+
+                                    <com.tuyenmonkey.mkloader.MKLoader
+                                        android:id="@+id/loader_sync_fuel_sale"
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        app:mk_type="Whirlpool"
+                                        android:visibility="invisible"
+                                        android:layout_marginRight="16dp"
+                                        app:mk_color="#000000"
+                                        />
+
+                                    <androidx.appcompat.widget.AppCompatImageView
+                                        android:id="@+id/ic_sync_fuel_sale"
+                                        android:layout_width="20dp"
+                                        android:layout_marginRight="16dp"
+                                        android:layout_height="20dp"
+                                        android:scaleType="center"
+                                        android:visibility="gone"
+                                        android:background="@drawable/ic_true"/>
+
+                                    <androidx.appcompat.widget.AppCompatTextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/sync_fuel_sale"
+                                        android:textSize="16sp"
+                                        android:textColor="#1F1F39"
+                                        android:layout_marginLeft="16dp"
+                                        android:layout_marginRight="16dp"
+                                        android:fontFamily="@font/din_medium"/>
+
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_fuel_sale_counter"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0/0"
+                                    android:fontFamily="@font/din_medium"
+                                    android:layout_centerVertical="true"
+                                    android:layout_alignParentLeft="true"
+                                    android:textSize="16sp"/>
+
+
+                            </RelativeLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="16dp"
+                                android:gravity="center">
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_fuel_sale"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:layout_marginLeft="10dp"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/sync"/>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/view_json_fuel_sale"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:layout_marginRight="10dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/view_json"/>
+
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/sync_pos_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <RelativeLayout
+
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:layout_toRightOf="@+id/sync_pos_counter"
+                                    android:layout_centerVertical="true"
+                                    android:layout_marginLeft="16dp"
+                                    android:orientation="horizontal">
+
+                                    <com.tuyenmonkey.mkloader.MKLoader
+                                        android:id="@+id/loader_sync_pos"
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        app:mk_type="Whirlpool"
+                                        android:visibility="invisible"
+                                        android:layout_marginRight="16dp"
+                                        app:mk_color="#000000"
+                                        />
+
+                                    <androidx.appcompat.widget.AppCompatImageView
+                                        android:id="@+id/ic_sync_pos"
+                                        android:layout_width="20dp"
+                                        android:layout_marginRight="16dp"
+                                        android:layout_height="20dp"
+                                        android:scaleType="center"
+                                        android:visibility="gone"
+                                        android:background="@drawable/ic_true"/>
+
+                                    <androidx.appcompat.widget.AppCompatTextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/sync_pos"
+                                        android:textSize="16sp"
+                                        android:textColor="#1F1F39"
+                                        android:layout_marginLeft="16dp"
+                                        android:layout_marginRight="16dp"
+                                        android:fontFamily="@font/din_medium"/>
+
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_pos_counter"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0/0"
+                                    android:fontFamily="@font/din_medium"
+                                    android:layout_centerVertical="true"
+                                    android:layout_alignParentLeft="true"
+                                    android:textSize="16sp"/>
+
+
+                            </RelativeLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="16dp"
+                                android:gravity="center">
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_pos"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:layout_marginLeft="10dp"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/sync"/>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/view_json_pos"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:layout_marginRight="10dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/view_json"/>
+
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/sync_add_move_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <RelativeLayout
+
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:layout_toRightOf="@+id/sync_add_move_counter"
+                                    android:layout_centerVertical="true"
+                                    android:layout_marginLeft="16dp"
+                                    android:orientation="horizontal">
+
+
+                                    <com.tuyenmonkey.mkloader.MKLoader
+                                        android:id="@+id/loader_sync_add_move"
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        app:mk_type="Whirlpool"
+                                        android:visibility="invisible"
+                                        android:layout_marginRight="16dp"
+                                        app:mk_color="#000000"
+                                        />
+
+                                    <androidx.appcompat.widget.AppCompatImageView
+                                        android:id="@+id/ic_sync_add_move"
+                                        android:layout_width="20dp"
+                                        android:layout_marginRight="16dp"
+                                        android:layout_height="20dp"
+                                        android:scaleType="center"
+                                        android:visibility="gone"
+                                        android:background="@drawable/ic_true"/>
+
+                                    <androidx.appcompat.widget.AppCompatTextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/sync_add_move"
+                                        android:textSize="16sp"
+                                        android:textColor="#1F1F39"
+                                        android:layout_marginLeft="16dp"
+                                        android:layout_marginRight="16dp"
+                                        android:fontFamily="@font/din_medium"/>
+
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_add_move_counter"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0/0"
+                                    android:fontFamily="@font/din_medium"
+                                    android:layout_centerVertical="true"
+                                    android:layout_alignParentLeft="true"
+                                    android:textSize="16sp"/>
+
+
+                            </RelativeLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="16dp"
+                                android:gravity="center">
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_add_move"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:layout_marginLeft="10dp"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/sync"/>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/view_json_add_move"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:layout_marginRight="10dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/view_json"/>
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/sync_add_load_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:layout_toRightOf="@+id/sync_add_load_counter"
+                                    android:layout_centerVertical="true"
+                                    android:layout_marginLeft="16dp"
+                                    android:orientation="horizontal">
+
+
+                                    <com.tuyenmonkey.mkloader.MKLoader
+                                        android:id="@+id/loader_sync_add_load"
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        android:visibility="invisible"
+                                        app:mk_type="Whirlpool"
+                                        android:layout_marginRight="16dp"
+                                        app:mk_color="#000000"
+                                        />
+
+                                    <androidx.appcompat.widget.AppCompatImageView
+                                        android:id="@+id/ic_sync_add_load"
+                                        android:layout_width="20dp"
+                                        android:layout_marginRight="16dp"
+                                        android:layout_height="20dp"
+                                        android:scaleType="center"
+                                        android:visibility="gone"
+                                        android:background="@drawable/ic_true"/>
+
+                                    <androidx.appcompat.widget.AppCompatTextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/sync_add_load"
+                                        android:textSize="16sp"
+                                        android:textColor="#1F1F39"
+                                        android:layout_marginLeft="16dp"
+                                        android:layout_marginRight="16dp"
+                                        android:fontFamily="@font/din_medium"/>
+
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_add_load_counter"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0/0"
+                                    android:fontFamily="@font/din_medium"
+                                    android:layout_centerVertical="true"
+                                    android:layout_alignParentLeft="true"
+                                    android:textSize="16sp"/>
+
+
+                            </RelativeLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="16dp"
+                                android:gravity="center">
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_add_load"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:layout_marginLeft="10dp"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/sync"/>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/view_json_add_load"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:layout_marginRight="10dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/view_json"/>
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/sync_add_discount_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:layout_toRightOf="@+id/sync_add_discount_counter"
+                                    android:layout_centerVertical="true"
+                                    android:layout_marginLeft="16dp"
+                                    android:orientation="horizontal">
+
+
+                                    <com.tuyenmonkey.mkloader.MKLoader
+                                        android:id="@+id/loader_sync_add_discount"
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        app:mk_type="Whirlpool"
+                                        android:visibility="invisible"
+                                        android:layout_marginRight="16dp"
+                                        app:mk_color="#000000"
+                                        />
+
+                                    <androidx.appcompat.widget.AppCompatImageView
+                                        android:id="@+id/ic_sync_add_discount"
+                                        android:layout_width="20dp"
+                                        android:layout_marginRight="16dp"
+                                        android:layout_height="20dp"
+                                        android:scaleType="center"
+                                        android:visibility="gone"
+                                        android:background="@drawable/ic_true"/>
+
+                                    <androidx.appcompat.widget.AppCompatTextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/sync_add_discount"
+                                        android:textSize="16sp"
+                                        android:textColor="#1F1F39"
+                                        android:layout_marginLeft="16dp"
+                                        android:layout_marginRight="16dp"
+                                        android:fontFamily="@font/din_medium"/>
+
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_add_discount_counter"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0/0"
+                                    android:fontFamily="@font/din_medium"
+                                    android:layout_centerVertical="true"
+                                    android:layout_alignParentLeft="true"
+                                    android:textSize="16sp"/>
+
+
+                            </RelativeLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="16dp"
+                                android:gravity="center">
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/sync_add_discount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:layout_marginLeft="10dp"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/sync"/>
+
+                                <androidx.appcompat.widget.AppCompatTextView
+                                    android:id="@+id/view_json_add_discount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/rounded_button"
+                                    android:paddingRight="40dp"
+                                    android:paddingLeft="40dp"
+                                    android:layout_marginRight="10dp"
+                                    android:paddingTop="10dp"
+                                    android:paddingBottom="10dp"
+                                    android:textColor="@color/white"
+                                    android:gravity="center"
+                                    android:fontFamily="@font/din_medium"
+                                    android:textSize="15sp"
+                                    android:text="@string/view_json"/>
+
+                            </LinearLayout>
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+
+                </ScrollView>
+
+
+            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/bottom_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:orientation="vertical">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/sync_all"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_button"
+                android:paddingRight="40dp"
+                android:paddingLeft="40dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:textColor="@color/white"
+                android:gravity="center"
+                android:fontFamily="@font/din_medium"
+                android:textSize="15sp"
+                android:text="@string/sync_all"/>
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/view_json_all"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_button"
+                android:paddingRight="40dp"
+                android:paddingLeft="40dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:textColor="@color/white"
+                android:gravity="center"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/din_medium"
+                android:textSize="15sp"
+                android:text="@string/view_json_all"/>
+
+
+        </LinearLayout>
+    </RelativeLayout>
+
+</LinearLayout>

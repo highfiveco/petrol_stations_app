@@ -188,6 +188,10 @@
         <activity
             android:name=".activities.PosCheckoutActivity"
             android:exported="true" />
+
+        <activity
+            android:name=".activities.SyncOfflineDataActivity"
+            android:exported="true" />
     </application>
 
 </manifest>

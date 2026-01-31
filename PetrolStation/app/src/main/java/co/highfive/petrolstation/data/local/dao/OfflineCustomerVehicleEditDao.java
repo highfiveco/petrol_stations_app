@@ -80,4 +80,16 @@ public interface OfflineCustomerVehicleEditDao {
             update(e);
         }
     }
+
+    // ✅ pending list
+    @Query("SELECT * FROM offline_customer_vehicle_edits WHERE syncStatus = 0 ORDER BY createdAtTs ASC LIMIT :limit")
+    List<OfflineCustomerVehicleEditEntity> getPending(int limit);
+
+    // ✅ count pending
+    @Query("SELECT COUNT(*) FROM offline_customer_vehicle_edits WHERE syncStatus = 0")
+    int countPending();
+
+    // ✅ mark status
+    @Query("UPDATE offline_customer_vehicle_edits SET syncStatus = :newStatus, syncError = :syncError, updatedAtTs = :ts WHERE localId IN (:ids)")
+    int markStatusByIds(List<Long> ids, int newStatus, String syncError, long ts);
 }

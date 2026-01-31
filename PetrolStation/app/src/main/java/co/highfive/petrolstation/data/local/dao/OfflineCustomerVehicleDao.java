@@ -38,4 +38,12 @@ public interface OfflineCustomerVehicleDao {
 
     @Query("SELECT * FROM offline_customer_vehicles WHERE offline_customer_local_id = :offlineCustomerLocalId ORDER BY updatedAtTs DESC")
     List<OfflineCustomerVehicleEntity> getByOfflineCustomerLocalId(long offlineCustomerLocalId);
+
+    // ✅ Count pending
+    @Query("SELECT COUNT(*) FROM offline_customer_vehicles WHERE syncStatus = 0")
+    int countPending();
+
+    // ✅ Mark status
+    @Query("UPDATE offline_customer_vehicles SET syncStatus = :newStatus, syncError = :syncError, updatedAtTs = :ts WHERE localId IN (:ids)")
+    int markStatusByIds(List<Long> ids, int newStatus, String syncError, long ts);
 }
